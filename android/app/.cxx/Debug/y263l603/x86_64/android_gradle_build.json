@@ -1,0 +1,28 @@
+{
+  "buildFiles": [
+    "C:\\Windows\\flutter_windows_3.24.3-stable\\flutter\\packages\\flutter_tools\\gradle\\src\\main\\groovy\\CMakeLists.txt"
+  ],
+  "cleanCommandsComponents": [
+    [
+      "C:\\Users\\Derik\\AppData\\Local\\Android\\Sdk\\cmake\\3.22.1\\bin\\ninja.exe",
+      "-C",
+      "C:\\Users\\Derik\\Documents\\Universidad\\8 cuatri\\Practica 1\\practica_2_20_enero\\flutter_aplication_3\\list view\\2_de_febrero\\pokeapi_app\\pokeapi_app\\android\\app\\.cxx\\Debug\\y263l603\\x86_64",
+      "clean"
+    ]
+  ],
+  "buildTargetsCommandComponents": [
+    "C:\\Users\\Derik\\AppData\\Local\\Android\\Sdk\\cmake\\3.22.1\\bin\\ninja.exe",
+    "-C",
+    "C:\\Users\\Derik\\Documents\\Universidad\\8 cuatri\\Practica 1\\practica_2_20_enero\\flutter_aplication_3\\list view\\2_de_febrero\\pokeapi_app\\pokeapi_app\\android\\app\\.cxx\\Debug\\y263l603\\x86_64",
+    "{LIST_OF_TARGETS_TO_BUILD}"
+  ],
+  "libraries": {},
+  "toolchains": {
+    "toolchain": {
+      "cCompilerExecutable": "C:\\Users\\Derik\\AppData\\Local\\Android\\Sdk\\ndk\\26.3.11579264\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang.exe",
+      "cppCompilerExecutable": "C:\\Users\\Derik\\AppData\\Local\\Android\\Sdk\\ndk\\26.3.11579264\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang++.exe"
+    }
+  },
+  "cFileExtensions": [],
+  "cppFileExtensions": []
+}

@@ -1,0 +1,2 @@
+C:/Users/Derik/Documents/Universidad/8 cuatri/Practica 1/practica_2_20_enero/flutter_aplication_3/list view/2_de_febrero/pokeapi_app/pokeapi_app/android/app/.cxx/Debug/y263l603/x86/CMakeFiles/edit_cache.dir
+C:/Users/Derik/Documents/Universidad/8 cuatri/Practica 1/practica_2_20_enero/flutter_aplication_3/list view/2_de_febrero/pokeapi_app/pokeapi_app/android/app/.cxx/Debug/y263l603/x86/CMakeFiles/rebuild_cache.dir
