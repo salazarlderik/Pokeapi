@@ -1,156 +1,122 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'api_service.dart';
+import 'package:provider/provider.dart'; // 1. Importa Provider
+import 'pokemon_provider.dart'; // 2. Importa tu Provider
+import 'pokemon_detail_screen.dart'; // 3. Importa la pantalla de detalle
 
-class PokemonScreen extends StatefulWidget {
-  @override
-  _PokemonScreenState createState() => _PokemonScreenState();
-}
-
-class _PokemonScreenState extends State<PokemonScreen> {
-  final ApiService _apiService = ApiService(); // Instancia del servicio de API
-  late Future<List<dynamic>> _pokemonListFuture; // Futuro para almacenar la lista de Pokémon
-
-  @override
-  void initState() {
-    super.initState();
-    _pokemonListFuture = _apiService.fetchPokemonList();
-  }
-
-  // Método para enviar datos mediante una petición POST
-  Future<void> sendData() async {
-    final url = Uri.parse('https://jsonplaceholder.typicode.com/posts'); // Url
-    final response = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'}, // Cabeceras para indicar que el cuerpo es JSON
-      body: jsonEncode({
-        'title': 'Pokémon App',
-        'body': 'Pokemon prueba.',
-        'userId': 1,
-      }),
-    );
-
-    // Verifica si la petición fue exitosa (código 201 significa "Created")
-    if (response.statusCode == 201) {
-      print('Datos enviados correctamente: ${response.body}');
-    } else {
-      throw Exception('Error al enviar los datos: ${response.statusCode}');
-    }
-  }
-
+class PokemonScreen extends StatelessWidget {
+  // 4. Convertido a StatelessWidget
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Pokémon Generación 7'), 
-        actions: [
-          // Botón para enviar datos
-          IconButton(
-            icon: Icon(Icons.send),
-            onPressed: () async {
-              try {
-                await sendData(); // Llama al método para enviar datos
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Datos enviados correctamente')), 
-                );
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Error: $e')), // Muestra un SnackBar de error
-                );
-              }
-            },
-          ),
-        ],
+        title: Text('Pokémon Generación 7'),
+        // 5. El 'actions' de 'sendData' fue eliminado
       ),
-      // FutureBuilder para manejar la carga de la lista de Pokémon
-      body: FutureBuilder<List<dynamic>>(
-        future: _pokemonListFuture,
-        builder: (context, snapshot) {
-          // Muestra un indicador de carga mientras se obtienen los datos
-          if (snapshot.connectionState == ConnectionState.waiting) {
+      // 6. Usamos Consumer para reaccionar a los cambios del Provider
+      body: Consumer<PokemonProvider>(
+        builder: (context, provider, child) {
+          // Muestra un indicador de carga
+          if (provider.isLoading) {
             return Center(child: CircularProgressIndicator());
           }
+
           // Muestra un mensaje de error si ocurre un problema
-          else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
+          if (provider.error != null) {
+            return Center(child: Text('Error: ${provider.error}'));
           }
+
           // Muestra un mensaje si no hay datos
-          else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          if (provider.pokemonList.isEmpty) {
             return Center(child: Text('No Pokémon found'));
           }
-          // Si los datos se cargaron correctamente, muestra la lista de Pokémon
-          else {
-            final pokemonList = snapshot.data!;
-            return GridView.builder(
-              padding: EdgeInsets.all(16),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2, // Número de columnas en la cuadrícula
-                crossAxisSpacing: 16, // Espaciado horizontal entre elementos
-                mainAxisSpacing: 16, // Espaciado vertical entre elementos
-                childAspectRatio: 0.7, // Relación de aspecto de los elementos
-              ),
-              itemCount: pokemonList.length, // Número de Pokémon en la lista
-              itemBuilder: (context, index) {
-                final pokemon = pokemonList[index];
-                final imageUrl = pokemon['sprites']['front_default']; // URL de la imagen del Pokémon
-                final types = (pokemon['types'] as List<dynamic>)
-                    .map<String>((type) => type['type']['name'] as String)
-                    .toList(); // Lista de tipos del Pokémon
-                final abilities = (pokemon['abilities'] as List<dynamic>)
-                    .map<String>((ability) => ability['ability']['name'] as String)
-                    .toList(); // Lista de habilidades del Pokémon
-                final isHidden = (pokemon['abilities'] as List<dynamic>)
-                    .map<bool>((ability) => ability['is_hidden'] as bool)
-                    .toList(); // Lista de habilidades ocultas
 
-                // Separa las habilidades normales de las ocultas
-                final normalAbilities = <String>[];
-                final hiddenAbilities = <String>[];
-                for (int i = 0; i < abilities.length; i++) {
-                  if (isHidden[i]) {
-                    hiddenAbilities.add(abilities[i]);
-                  } else {
-                    normalAbilities.add(abilities[i]);
-                  }
-                }
+          // Si los datos se cargaron correctamente, muestra la lista
+          final pokemonList = provider.pokemonList;
 
-                // Construye la tarjeta de cada Pokémon
-                return _buildPokemonCard(
-                  name: pokemon['name'],
-                  imageUrl: imageUrl,
-                  types: types,
-                  normalAbilities: normalAbilities,
-                  hiddenAbilities: hiddenAbilities,
-                );
-              },
-            );
+          // --- MEJORA DE RESPONSIVIDAD ---
+          // 7. Determinar el número de columnas basado en el ancho
+          final screenWidth = MediaQuery.of(context).size.width;
+          int crossAxisCount;
+          if (screenWidth > 1200) {
+            crossAxisCount = 5; // Pantallas muy grandes
+          } else if (screenWidth > 800) {
+            crossAxisCount = 4; // Tablets
+          } else if (screenWidth > 500) {
+            crossAxisCount = 3; // Tablets pequeñas / Teléfonos grandes
+          } else {
+            crossAxisCount = 2; // Teléfonos
           }
+          // --- FIN MEJORA RESPONSIVIDAD ---
+
+          return GridView.builder(
+            padding: EdgeInsets.all(16),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: crossAxisCount, // 8. Usamos el valor dinámico
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              childAspectRatio: 0.7,
+            ),
+            itemCount: pokemonList.length,
+            itemBuilder: (context, index) {
+              final pokemon = pokemonList[index];
+
+              // 9. Implementamos la navegación
+              return InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          PokemonDetailScreen(pokemon: pokemon),
+                    ),
+                  );
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: _buildPokemonCard(pokemon), // 10. Pasamos el mapa completo
+              );
+            },
+          );
         },
       ),
     );
   }
 
-  // Método para construir la tarjeta de un Pokémon
-  Widget _buildPokemonCard({
-    required String name,
-    required String? imageUrl,
-    required List<String> types,
-    required List<String> normalAbilities,
-    required List<String> hiddenAbilities,
-  }) {
+  // 11. Modificamos _buildPokemonCard para aceptar el mapa
+  Widget _buildPokemonCard(Map<String, dynamic> pokemon) {
+    // Extraemos los datos aquí
+    final name = pokemon['name'] as String;
+    final imageUrl = pokemon['sprites']['front_default'] as String?;
+    final types = (pokemon['types'] as List<dynamic>)
+        .map<String>((type) => type['type']['name'] as String)
+        .toList();
+    final abilities = (pokemon['abilities'] as List<dynamic>)
+        .map<String>((ability) => ability['ability']['name'] as String)
+        .toList();
+    final isHidden = (pokemon['abilities'] as List<dynamic>)
+        .map<bool>((ability) => ability['is_hidden'] as bool)
+        .toList();
+
+    final normalAbilities = <String>[];
+    final hiddenAbilities = <String>[];
+    for (int i = 0; i < abilities.length; i++) {
+      if (isHidden[i]) {
+        hiddenAbilities.add(abilities[i]);
+      } else {
+        normalAbilities.add(abilities[i]);
+      }
+    }
+
     return Card(
-      elevation: 4, // Elevación de la tarjeta
+      elevation: 4,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12), // Bordes redondeados
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Padding(
         padding: EdgeInsets.all(8),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Muestra la imagen del Pokémon o un ícono de error si no está disponible
             if (imageUrl != null)
               Image.network(
                 imageUrl,
@@ -163,35 +129,36 @@ class _PokemonScreenState extends State<PokemonScreen> {
             else
               Icon(Icons.image, size: 40, color: Colors.grey),
             SizedBox(height: 8),
-            // Muestra el nombre del Pokémon en mayúsculas
             Text(
               name.toUpperCase(),
               style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
+              maxLines: 1, // Evita desbordamiento de nombres largos
+              overflow: TextOverflow.ellipsis,
             ),
             SizedBox(height: 8),
-            // Muestra los tipos del Pokémon con íconos SVG
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: types.map((type) {
-                final typeImageUrl = 'https://raw.githubusercontent.com/duiker101/pokemon-type-svg-icons/master/icons/$type.svg';
+                final typeImageUrl =
+                    'https://raw.githubusercontent.com/duiker101/pokemon-type-svg-icons/master/icons/$type.svg';
                 return Padding(
                   padding: EdgeInsets.symmetric(horizontal: 4),
                   child: Container(
-                    color: _getTypeColor(type), // Color de fondo según el tipo
+                    color: _getTypeColor(type),
                     padding: EdgeInsets.all(4),
                     child: SvgPicture.network(
                       typeImageUrl,
                       width: 24,
                       height: 24,
-                      placeholderBuilder: (context) => Icon(Icons.image, size: 24, color: Colors.white),
+                      placeholderBuilder: (context) =>
+                          Icon(Icons.image, size: 24, color: Colors.white),
                     ),
                   ),
                 );
               }).toList(),
             ),
             SizedBox(height: 8),
-            // Muestra las habilidades del Pokémon
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -200,11 +167,15 @@ class _PokemonScreenState extends State<PokemonScreen> {
                     Text(
                       'Habilidades: ${normalAbilities.join(', ')}',
                       style: TextStyle(fontSize: 10),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   if (hiddenAbilities.isNotEmpty)
                     Text(
-                      'Habilidad Oculta: ${hiddenAbilities.join(', ')}',
+                      'Oculta: ${hiddenAbilities.join(', ')}',
                       style: TextStyle(fontSize: 10),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                 ],
               ),
@@ -215,7 +186,7 @@ class _PokemonScreenState extends State<PokemonScreen> {
     );
   }
 
-  // Método para obtener el color asociado a un tipo de Pokémon
+  // 12. Esta función debe estar aquí (o en un archivo de utilidades)
   Color _getTypeColor(String type) {
     switch (type) {
       case 'grass':

@@ -1,0 +1,2 @@
+C:/Users/Derik/pokeapi_app/android/app/.cxx/Debug/2wi3c515/armeabi-v7a/CMakeFiles/edit_cache.dir
+C:/Users/Derik/pokeapi_app/android/app/.cxx/Debug/2wi3c515/armeabi-v7a/CMakeFiles/rebuild_cache.dir

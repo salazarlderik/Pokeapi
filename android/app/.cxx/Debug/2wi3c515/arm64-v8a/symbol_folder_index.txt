@@ -1,0 +1,1 @@
+C:\Users\Derik\pokeapi_app\build\app\intermediates\cxx\Debug\2wi3c515\obj\arm64-v8a
