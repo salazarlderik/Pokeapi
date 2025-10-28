@@ -1,47 +1,116 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'utils/type_colors.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
-class PokemonDetailScreen extends StatelessWidget {
-  // Recibimos el mapa completo del Pokémon
+class PokemonDetailScreen extends StatefulWidget {
   final Map<String, dynamic> pokemon;
-
   const PokemonDetailScreen({Key? key, required this.pokemon}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    // Extrayendo datos
-    final String name = pokemon['name'];
-    // Intenta usar la imagen oficial (es de mejor calidad)
-    final String imageUrl =
-        pokemon['sprites']['other']['official-artwork']['front_default'] ??
-            pokemon['sprites']['front_default'];
+  _PokemonDetailScreenState createState() => _PokemonDetailScreenState();
+}
 
-    final types = (pokemon['types'] as List<dynamic>)
+class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
+  bool _isLoadingAbilities = true;
+  final Map<String, String> _abilityDetails = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchAbilityDetails();
+  }
+
+  Future<void> _fetchAbilityDetails() async {
+    final abilities = (widget.pokemon['abilities'] as List<dynamic>);
+    List<Future<Map<String, String?>>> futures = [];
+    for (var abilityInfo in abilities) {
+      final abilityUrl = abilityInfo['ability']['url'] as String;
+      final abilityName = abilityInfo['ability']['name'] as String;
+      futures.add(_fetchSingleAbility(abilityUrl, abilityName));
+    }
+    try {
+      final results = await Future.wait(futures);
+      if (mounted) {
+        setState(() {
+          for (var res in results) {
+            _abilityDetails[res['name']!] = res['effect'] ?? 'Descripción no disponible.';
+          }
+          _isLoadingAbilities = false;
+        });
+      }
+    } catch (e) {
+      print('Error fetching abilities: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingAbilities = false;
+        });
+      }
+    }
+  }
+
+  Future<Map<String, String?>> _fetchSingleAbility(String url, String name) async {
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final effectEntries = (data['effect_entries'] as List<dynamic>);
+        final entry = effectEntries.firstWhere(
+          (e) => e['language']['name'] == 'en',
+          orElse: () => null,
+        );
+        final description = entry != null ? entry['short_effect'] as String : null;
+        return {'name': name, 'effect': description};
+      }
+    } catch (e) {
+      print('Error fetching $name: $e');
+    }
+    return {'name': name, 'effect': 'Error al cargar.'};
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final String name = widget.pokemon['name'];
+    final String id = widget.pokemon['id'].toString();
+    final String imageUrl = widget.pokemon['sprites']['other']['official-artwork']
+            ['front_default'] ??
+        widget.pokemon['sprites']['front_default'];
+    final types = (widget.pokemon['types'] as List<dynamic>)
         .map<String>((type) => type['type']['name'] as String)
         .toList();
-
-    final abilities = (pokemon['abilities'] as List<dynamic>)
+    final abilityNames = (widget.pokemon['abilities'] as List<dynamic>)
         .map<String>((ability) => ability['ability']['name'] as String)
         .toList();
+    final int height = widget.pokemon['height'];
+    final int weight = widget.pokemon['weight'];
 
-    final int height = pokemon['height']; // Altura en decímetros
-    final int weight = pokemon['weight']; // Peso en hectogramos
+    final mainColor = getTypeColor(types.first);
 
     return Scaffold(
       appBar: AppBar(
-        // Capitaliza el nombre para el título
         title: Text(name[0].toUpperCase() + name.substring(1)),
-        backgroundColor: _getTypeColor(types.first), // Color basado en el primer tipo
+        backgroundColor: mainColor,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Center(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              mainColor.withOpacity(0.25),
+              mainColor.withOpacity(0.10),
+            ],
+          ),
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // 1. Imagen del Pokémon
-              if (imageUrl != null)
-                Image.network(
+              Hero(
+                tag: 'pokemon-$id',
+                child: Image.network(
                   imageUrl,
                   width: 250,
                   height: 250,
@@ -49,53 +118,69 @@ class PokemonDetailScreen extends StatelessWidget {
                   errorBuilder: (context, error, stackTrace) {
                     return Icon(Icons.error, size: 200, color: Colors.red);
                   },
-                )
-              else
-                Icon(Icons.image, size: 200, color: Colors.grey),
-
-              SizedBox(height: 16),
-
-              // 2. Nombre
+                ),
+              ),
+              const SizedBox(height: 16),
               Text(
                 name.toUpperCase(),
+                textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 8.0,
+                runSpacing: 4.0,
+                children: types.map((type) => _buildTypeChip(type)).toList(),
+              ),
+              const SizedBox(height: 24),
+              _buildStatsCard(id, weight, height),
+              const SizedBox(height: 24),
+              Text(
+                'Habilidades',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: Colors.black87,
                       fontWeight: FontWeight.bold,
                     ),
               ),
+              const SizedBox(height: 8),
+              _isLoadingAbilities
+                  ? const Center(child: CircularProgressIndicator())
+                  : ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: abilityNames.length,
+                      itemBuilder: (context, index) {
+                        final abilityName = abilityNames[index];
+                        final description =
+                            _abilityDetails[abilityName] ?? 'Cargando...';
 
-              SizedBox(height: 8),
-
-              // 3. Tipos
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: types.map((type) => _buildTypeChip(type)).toList(),
-              ),
-
-              SizedBox(height: 24),
-
-              // 4. Información adicional (Peso y Altura)
-              _buildStatInfo('Peso', '${weight / 10} kg'), // Convertir a kg
-              _buildStatInfo('Altura', '${height / 10} m'), // Convertir a m
-
-              SizedBox(height: 24),
-
-              // 5. Habilidades
-              Text(
-                'Habilidades',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              SizedBox(height: 8),
-              Wrap(
-                spacing: 8.0,
-                runSpacing: 4.0,
-                alignment: WrapAlignment.center,
-                children: abilities
-                    .map((ability) => Chip(
-                          label: Text(ability),
-                          backgroundColor: Colors.grey[200],
-                        ))
-                    .toList(),
-              ),
+                        return Card(
+                          elevation: 2,
+                          margin: const EdgeInsets.symmetric(
+                              vertical: 4, horizontal: 8),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          child: ListTile(
+                            title: Text(
+                              abilityName[0].toUpperCase() +
+                                  abilityName.substring(1),
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87),
+                            ),
+                            subtitle: Text(
+                              description.replaceAll('\n', ' '),
+                              style: TextStyle(color: Colors.grey[700]),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
             ],
           ),
         ),
@@ -103,89 +188,64 @@ class PokemonDetailScreen extends StatelessWidget {
     );
   }
 
-  // Widget helper para mostrar la info de peso y altura
-  Widget _buildStatInfo(String label, String value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          '$label: ',
-          style: TextStyle(fontSize: 16, color: Colors.grey[700]),
-        ),
-        Text(
-          value,
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-      ],
-    );
-  }
-
-  // Widget helper para mostrar los tipos
-  Widget _buildTypeChip(String type) {
-    final typeColor = _getTypeColor(type);
-    final typeImageUrl =
-        'https://raw.githubusercontent.com/duiker101/pokemon-type-svg-icons/master/icons/$type.svg';
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4.0),
-      child: Chip(
-        backgroundColor: typeColor,
-        label: Text(
-          type.toUpperCase(),
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        avatar: SvgPicture.network(
-          typeImageUrl,
-          width: 20,
-          height: 20,
-          colorFilter: ColorFilter.mode(Colors.white, BlendMode.srcIn),
+  Widget _buildStatsCard(String id, int weight, int height) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _buildStatColumn('ID', '#$id'),
+            _buildStatColumn('Peso', '${weight / 10} kg'),
+            _buildStatColumn('Altura', '${height / 10} m'),
+          ],
         ),
       ),
     );
   }
 
-  // Nota: Esta función está duplicada.
-  // En un proyecto real, la moverías a 'lib/utils/type_colors.dart'
-  Color _getTypeColor(String type) {
-    switch (type) {
-      case 'grass':
-        return Colors.green;
-      case 'fire':
-        return Colors.red;
-      case 'water':
-        return Colors.blue;
-      case 'electric':
-        return Colors.yellow;
-      case 'psychic':
-        return Colors.purple;
-      case 'ice':
-        return Colors.lightBlue;
-      case 'dragon':
-        return Colors.indigo;
-      case 'dark':
-        return Colors.brown;
-      case 'fairy':
-        return Colors.pink;
-      case 'normal':
-        return Colors.grey;
-      case 'fighting':
-        return Colors.orange;
-      case 'flying':
-        return Colors.lightBlue[300]!;
-      case 'poison':
-        return Colors.purple[800]!;
-      case 'ground':
-        return Colors.brown[400]!;
-      case 'rock':
-        return Colors.brown[600]!;
-      case 'bug':
-        return Colors.lightGreen[500]!;
-      case 'ghost':
-        return Colors.deepPurple;
-      case 'steel':
-        return Colors.blueGrey;
-      default:
-        return Colors.grey;
-    }
+  Widget _buildStatColumn(String label, String value) {
+    return Column(
+      children: [
+        Text(
+          label.toUpperCase(),
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey[600],
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTypeChip(String type) {
+    final typeColor = getTypeColor(type);
+    final typeImageUrl =
+        'https://raw.githubusercontent.com/duiker101/pokemon-type-svg-icons/master/icons/$type.svg';
+    return Chip(
+      backgroundColor: typeColor,
+      label: Text(
+        type.toUpperCase(),
+        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      ),
+      avatar: SvgPicture.network(
+        typeImageUrl,
+        width: 20,
+        height: 20,
+        colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+      ),
+    );
   }
 }

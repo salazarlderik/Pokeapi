@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart'; // 1. Importa Provider
-import 'pokemon_provider.dart'; // 2. Importa tu Provider
+import 'package:provider/provider.dart';
+import 'pokemon_provider.dart';
 import 'pokemon_screen.dart';
 
 void main() {
-  // 3. Envuelve la app con el ChangeNotifierProvider
   runApp(
     ChangeNotifierProvider(
       create: (context) => PokemonProvider(),
@@ -18,9 +17,14 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Pokémon App',
+      
+      // Esta línea es esencial
+      // Le dice a la app que ignore el Modo Oscuro del teléfono
+      themeMode: ThemeMode.light, 
+      
       theme: ThemeData(
         primarySwatch: Colors.red,
-        scaffoldBackgroundColor: Colors.grey[100],
+        scaffoldBackgroundColor: Colors.grey[100], // Fondo para la lista
         appBarTheme: AppBarTheme(
           backgroundColor: Colors.redAccent,
           elevation: 4,
