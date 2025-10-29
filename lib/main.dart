@@ -3,8 +3,10 @@ import 'package:provider/provider.dart';
 import 'pokemon_provider.dart';
 import 'pokemon_screen.dart';
 
+
 void main() {
   runApp(
+    // Provee el estado de PokemonProvider al árbol de widgets.
     ChangeNotifierProvider(
       create: (context) => PokemonProvider(),
       child: MyApp(),
@@ -12,19 +14,16 @@ void main() {
   );
 }
 
+/// Widget raíz de la aplicación.
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Pokémon App',
-      
-      // Esta línea es esencial
-      // Le dice a la app que ignore el Modo Oscuro del teléfono
-      themeMode: ThemeMode.light, 
-      
-      theme: ThemeData(
+      title: 'PokeApi App', 
+      themeMode: ThemeMode.light, // Forza el tema claro siempre
+      theme: ThemeData( // Define la apariencia general de la app
         primarySwatch: Colors.red,
-        scaffoldBackgroundColor: Colors.grey[100], // Fondo para la lista
+        scaffoldBackgroundColor: Colors.grey[100],
         appBarTheme: AppBarTheme(
           backgroundColor: Colors.redAccent,
           elevation: 4,
