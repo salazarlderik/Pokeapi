@@ -35,7 +35,7 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
       if (mounted) {
         setState(() {
           for (var res in results) {
-            _abilityDetails[res['name']!] = res['effect'] ?? 'Descripción no disponible.';
+            _abilityDetails[res['name']!] = res['effect'] ?? 'Description not available.';
           }
           _isLoadingAbilities = false;
         });
@@ -66,7 +66,7 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
     } catch (e) {
       print('Error fetching $name: $e');
     }
-    return {'name': name, 'effect': 'Error al cargar.'};
+    return {'name': name, 'effect': 'Error loading.'};
   }
 
   @override
@@ -84,6 +84,7 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
         .toList();
     final int height = widget.pokemon['height'];
     final int weight = widget.pokemon['weight'];
+    final stats = (widget.pokemon['stats'] as List<dynamic>);
 
     final mainColor = getTypeColor(types.first);
 
@@ -138,9 +139,31 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
               ),
               const SizedBox(height: 24),
               _buildStatsCard(id, weight, height),
+
               const SizedBox(height: 24),
               Text(
-                'Habilidades',
+                'Base Stats',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: Colors.black87,
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 8),
+              Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    children: stats.map((stat) => _buildStatBar(stat)).toList(),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+              Text(
+                'Abilities',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       color: Colors.black87,
@@ -157,7 +180,7 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
                       itemBuilder: (context, index) {
                         final abilityName = abilityNames[index];
                         final description =
-                            _abilityDetails[abilityName] ?? 'Cargando...';
+                            _abilityDetails[abilityName] ?? 'Loading...';
 
                         return Card(
                           elevation: 2,
@@ -198,8 +221,8 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             _buildStatColumn('ID', '#$id'),
-            _buildStatColumn('Peso', '${weight / 10} kg'),
-            _buildStatColumn('Altura', '${height / 10} m'),
+            _buildStatColumn('Weight', '${weight / 10} kg'),
+            _buildStatColumn('Height', '${height / 10} m'),
           ],
         ),
       ),
@@ -248,4 +271,81 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
       ),
     );
   }
+
+  /// Formatea el nombre de la estadística para mostrarlo en inglés
+  String _formatStatName(String statName) {
+    switch (statName) {
+      case 'hp': return 'HP';
+      case 'attack': return 'Attack';
+      case 'defense': return 'Defense';
+      case 'special-attack': return 'Sp. Atk';
+      case 'special-defense': return 'Sp. Def';
+      case 'speed': return 'Speed';
+      default: return statName.replaceAll('-', ' ').split(' ').map((word) => word[0].toUpperCase() + word.substring(1)).join(' ');
+    }
+  }
+
+  // --- INICIO DEL CAMBIO ---
+  // Se eliminó _getStatColor ya que el color ahora depende del valor
+
+  /// Construye una sola barra de estadística (Nombre, Valor y Barra con color dinámico)
+  Widget _buildStatBar(dynamic stat) {
+    final String name = stat['stat']['name'];
+    final int value = stat['base_stat'];
+    
+    // 1. Determinar el color de la barra según el valor
+    Color barColor;
+    if (value <= 59) {
+      barColor = Colors.red;
+    } else if (value <= 99) {
+      barColor = Colors.yellow.shade700; // Un amarillo más visible
+    } else if (value <= 159) {
+      barColor = Colors.green;
+    } else { // 160 o más
+      barColor = Colors.blue;
+    }
+
+    // 2. Normalizar el valor (máximo visual 200, como antes)
+    final double normalizedValue = value > 200 ? 1.0 : (value / 200.0);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // 3. Hacer el nombre del stat un poco más estrecho para dar espacio
+              SizedBox(
+                width: 80, // Ancho fijo para el nombre del stat
+                child: Text(
+                  _formatStatName(name),
+                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
+                  overflow: TextOverflow.ellipsis, // Por si acaso
+                ),
+              ),
+              // 4. Mostrar el valor numérico
+              Text(
+                value.toString(),
+                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: normalizedValue,
+              // 5. Usar el color determinado para el fondo y la barra
+              backgroundColor: barColor.withOpacity(0.2), 
+              valueColor: AlwaysStoppedAnimation<Color>(barColor),
+              minHeight: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  // --- FIN DEL CAMBIO ---
 }

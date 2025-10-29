@@ -1,42 +1,36 @@
 import 'package:flutter/material.dart';
-import 'api_service.dart'; // Importa tu servicio
+import 'api_service.dart';
 
 class PokemonProvider extends ChangeNotifier {
   final ApiService _apiService = ApiService();
 
-  // Estado de la lista de Pokémon
   List<dynamic> _pokemonList = [];
   List<dynamic> get pokemonList => _pokemonList;
 
-  // Estado de carga
-  bool _isLoading = true; // Inicia en true para la carga inicial
+  bool _isLoading = true;
   bool get isLoading => _isLoading;
 
-  // Estado de error
   String? _error;
   String? get error => _error;
 
-  /// Constructor: Inicia la carga de datos automáticamente
   PokemonProvider() {
     fetchPokemons();
   }
 
-  /// Método para obtener los Pokémon usando el ApiService
   Future<void> fetchPokemons() async {
     _isLoading = true;
     _error = null;
-    notifyListeners(); // Notifica a los widgets que estamos cargando
+    notifyListeners();
 
     try {
-      // Llama al servicio para obtener los datos
       _pokemonList = await _apiService.fetchPokemonList();
     } catch (e) {
-      // Maneja cualquier error que ocurra durante el fetching
-      _error = e.toString();
+      // --- TRADUCCIÓN ---
+      _error = 'Failed to load Pokémon list. Please check your connection.';
+      print('Error fetching Pokémon list: $e'); // Mantenemos el log técnico
     } finally {
-      // Sin importar si hubo éxito o error, dejamos de cargar
       _isLoading = false;
-      notifyListeners(); // Notifica a los widgets el estado final
+      notifyListeners();
     }
   }
 }

@@ -9,7 +9,8 @@ class PokemonScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Pokémon Alola'),
+        // --- TRADUCCIÓN ---
+        title: Text('Alola Pokémon'), // O 'Pokémon Alola' si prefieres
       ),
       body: Consumer<PokemonProvider>(
         builder: (context, provider, child) {
@@ -20,17 +21,20 @@ class PokemonScreen extends StatelessWidget {
                 children: [
                   CircularProgressIndicator(),
                   SizedBox(height: 16),
-                  Text('Cargando Pokédex de Alola...'),
+                  // --- TRADUCCIÓN ---
+                  Text('Loading Alola Pokédex...'),
                 ],
               ),
             );
           }
 
           if (provider.error != null) {
+            // Ya estaba en inglés, pero aseguramos
             return Center(child: Text('Error: ${provider.error}'));
           }
 
           if (provider.pokemonList.isEmpty) {
+            // Ya estaba en inglés
             return Center(child: Text('No Pokémon found'));
           }
 
@@ -54,7 +58,7 @@ class PokemonScreen extends StatelessWidget {
               crossAxisCount: crossAxisCount,
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
-              childAspectRatio: 0.6,
+              childAspectRatio: 0.6, // Mantenemos la última proporción
             ),
             itemCount: pokemonList.length,
             itemBuilder: (context, index) {
@@ -87,7 +91,8 @@ class PokemonScreen extends StatelessWidget {
         pokemon['sprites']['front_default'];
     
     final id = pokemon['id'] as int;
-    final formattedId = id.toString().padLeft(4, '0'); 
+    // --- TRADUCCIÓN --- (Quitamos el padLeft para un formato más estándar en inglés)
+    // final formattedId = id.toString().padLeft(4, '0'); 
 
     final types = (pokemon['types'] as List<dynamic>)
         .map<String>((type) => type['type']['name'] as String)
@@ -105,38 +110,27 @@ class PokemonScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Bloque de la Imagen
           Expanded(
-            flex: 3, // Proporción 3
+            flex: 3,
             child: Hero(
               tag: 'pokemon-$id',
               child: Padding(
                 padding: const EdgeInsets.all(12.0),
                 child: (imageUrl != null)
-                    ? Image.network(
-                        imageUrl,
-                        fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Icon(Icons.error, size: 40, color: Colors.red);
-                        },
-                        loadingBuilder: (context, child, progress) {
-                          if (progress == null) return child;
-                          return Center(child: CircularProgressIndicator());
-                        },
-                      )
+                    ? Image.network( /* ... Imagen ... */ imageUrl, fit: BoxFit.contain, errorBuilder: (c,e,s)=>Icon(Icons.error), loadingBuilder: (c,ch,p)=> p==null?ch:Center(child: CircularProgressIndicator()))
                     : Icon(Icons.image, size: 60, color: Colors.grey),
               ),
             ),
           ),
           
-          // Bloque de Texto y Tipos
           Expanded(
-            flex: 2, // Proporción 2
+            flex: 2,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  'N.º $formattedId',
+                  // --- TRADUCCIÓN --- (Usamos # como es común en inglés)
+                  '#$id',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
@@ -146,29 +140,12 @@ class PokemonScreen extends StatelessWidget {
                 SizedBox(height: 4),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                  child: Text(
-                    name[0].toUpperCase() + name.substring(1),
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black.withOpacity(0.8),
-                    ),
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  child: Text( /* ... Nombre ... */ name[0].toUpperCase() + name.substring(1), style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.black.withOpacity(0.8)), textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis,),
                 ),
                 SizedBox(height: 8),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                  child: Wrap(
-                    alignment: WrapAlignment.center,
-                    spacing: 4,
-                    runSpacing: 4,
-                    children: types
-                        .map((type) => _buildTypeChip(type, isSmall: true))
-                        .toList(),
-                  ),
+                  child: Wrap( /* ... Tipos ... */ alignment: WrapAlignment.center, spacing: 4, runSpacing: 4, children: types.map((type) => _buildTypeChip(type, isSmall: true)).toList(),),
                 ),
               ],
             ),
@@ -178,26 +155,8 @@ class PokemonScreen extends StatelessWidget {
     );
   }
 
-  // Chip de tipo (sin ícono)
   Widget _buildTypeChip(String type, {bool isSmall = false}) {
     final typeColor = getTypeColor(type);
-
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 2),
-      child: Chip(
-        backgroundColor: typeColor,
-        labelPadding: EdgeInsets.symmetric(horizontal: isSmall ? 8.0 : 12.0),
-        padding: EdgeInsets.all(isSmall ? 0 : 2),
-        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        label: Text(
-          type.toUpperCase(),
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: isSmall ? 10 : 12,
-          ),
-        ),
-      ),
-    );
+    return Padding( /* ... Chip (sin ícono) ... */ padding: EdgeInsets.symmetric(horizontal: 2), child: Chip(backgroundColor: typeColor, labelPadding: EdgeInsets.symmetric(horizontal: isSmall ? 8.0 : 12.0), padding: EdgeInsets.all(isSmall ? 0 : 2), materialTapTargetSize: MaterialTapTargetSize.shrinkWrap, label: Text(type.toUpperCase(), style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: isSmall ? 10 : 12,),),),);
   }
 }
