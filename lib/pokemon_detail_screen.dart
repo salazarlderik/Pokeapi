@@ -35,7 +35,6 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
 
   /// Obtiene las descripciones de las habilidades
   Future<void> _fetchAbilityDetails() async {
-    // ... (Esta función no cambia) ...
     final abilities = (widget.pokemon['abilities'] as List<dynamic>);
     List<Future<Map<String, String?>>> futures = [];
     for (var abilityInfo in abilities) {
@@ -61,7 +60,6 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
 
   /// Obtiene la descripción de una habilidad
   Future<Map<String, String?>> _fetchSingleAbility(String url, String name) async {
-    // ... (Esta función no cambia) ...
     try {
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
@@ -75,7 +73,6 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
 
   /// Obtiene y calcula las debilidades y resistencias del Pokémon
   Future<void> _fetchTypeEffectiveness() async {
-    // ... (Esta función no cambia) ...
     if (!mounted) return;
     setState(() { _isLoadingTypeDefenses = true; });
 
@@ -120,7 +117,6 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // ... (Extracción de datos no cambia) ...
     final String name = widget.pokemon['name'];
     final String id = widget.pokemon['id'].toString();
     final String imageUrl = widget.pokemon['sprites']['other']['official-artwork']['front_default'] ?? widget.pokemon['sprites']['front_default'];
@@ -140,7 +136,6 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // ... (Hero, Nombre, Tipos, StatsCard, Base Stats no cambian) ...
               Hero(tag: 'pokemon-$id', child: Image.network(imageUrl, width: 250, height: 250, fit: BoxFit.contain, errorBuilder: (c, e, s) => Icon(Icons.error, size: 200, color: Colors.red))),
               const SizedBox(height: 16),
               Text(name.toUpperCase(), textAlign: TextAlign.center, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, color: Colors.black87)),
@@ -153,7 +148,7 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
               const SizedBox(height: 8),
               Card(elevation: 2, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), child: Padding(padding: const EdgeInsets.all(16.0), child: Column(children: stats.map((stat) => _buildStatBar(stat)).toList()))),
               
-              // --- SECCIÓN DE DEFENSAS DE TIPO (MODIFICADA) ---
+              //SECCIÓN DE DEFENSAS DE TIPO 
               const SizedBox(height: 24),
               Text(
                 'Type Defenses',
@@ -172,18 +167,14 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
                           alignment: WrapAlignment.center,
                           spacing: 8.0, // Espacio horizontal
                           runSpacing: 8.0, // Espacio vertical
-                          // --- INICIO DEL CAMBIO ---
-                          // Itera sobre la lista fija _allTypes para mostrar los 18
                           children: _allTypes.map((type) {
-                            // Busca el multiplicador; si no existe (error raro), asume 1.0
                             final double multiplier = _typeEffectiveness[type] ?? 1.0;
                             return _buildTypeEffectivenessItem(type, multiplier);
                           }).toList(),
-                          // --- FIN DEL CAMBIO ---
                         ),
                 ),
               ),
-              // --- FIN SECCIÓN DE DEFENSAS ---
+              
 
               const SizedBox(height: 24),
               Text('Abilities', textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.black87, fontWeight: FontWeight.bold)),
@@ -191,7 +182,6 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
               _isLoadingAbilities
                   ? const Center(child: CircularProgressIndicator())
                   : ListView.builder(
-                      // ... (Sección de Habilidades no cambia) ...
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: abilityNames.length,
@@ -216,9 +206,7 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
     );
   }
 
-  // --- WIDGETS AUXILIARES (HELPERS) ---
 
-  // ... (_buildStatsCard, _buildStatColumn, _buildTypeChip, _formatStatName, _buildStatBar no cambian) ...
   Widget _buildStatsCard(String id, int weight, int height) {
     return Card(
       elevation: 2,
@@ -337,11 +325,8 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
       multiplierText = 'x0';
       multiplierColor = Colors.black87;
     } else {
-      // --- INICIO DEL CAMBIO ---
-      // Caso Neutro (x1)
       multiplierText = ''; // Texto vacío
-      multiplierColor = Colors.transparent; // Color invisible
-      // --- FIN DEL CAMBIO ---
+      multiplierColor = Colors.transparent; 
     }
 
     return SizedBox(
@@ -350,9 +335,6 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
         children: [
           _buildTypeIcon(type), // Siempre muestra el ícono
           const SizedBox(height: 4),
-          // --- INICIO DEL CAMBIO ---
-          // Usamos un SizedBox para reservar el espacio vertical,
-          // asegurando que todos los íconos se alineen perfectamente.
           SizedBox(
             height: 18, // Altura aproximada del texto
             child: Text(
@@ -360,7 +342,6 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
               style: TextStyle(fontWeight: FontWeight.bold, color: multiplierColor, fontSize: 14),
             ),
           )
-          // --- FIN DEL CAMBIO ---
         ],
       ),
     );

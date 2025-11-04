@@ -19,13 +19,13 @@ class RegionScreen extends StatelessWidget {
             context,
             'Kanto (Gen 1)',
             1, 151,
-            'kanto.PNG', // Usando tus nombres de archivo exactos
+            'kanto.PNG', 
           ),
           _buildRegionTile(
             context,
             'Johto (Gen 2)',
             152, 251,
-            'jotho.png', // O 'johto.png', asegúrate que coincida
+            'jotho.png', 
           ),
           _buildRegionTile(
             context,
@@ -43,7 +43,7 @@ class RegionScreen extends StatelessWidget {
             context,
             'Unova (Gen 5)',
             494, 649,
-            'unova.png', // O 'Teselia.PNG'
+            'unova.png', 
           ),
           _buildRegionTile(
             context,
@@ -63,23 +63,19 @@ class RegionScreen extends StatelessWidget {
             810, 898,
             'galar.PNG',
           ),
-
-          // --- INICIO DE LA CORRECCIÓN ---
-          // Separamos Hisui (899-905) de Paldea (906+)
           
           _buildRegionTile(
             context,
-            'Hisui (Legends)', // Nueva entrada
-            899, 905,           // Rango correcto para Hisui
-            'hisui.PNG',       // Usando tu archivo 'hisui.PNG'
+            'Hisui (Legends)',
+            899, 905,         
+            'hisui.PNG',       
           ),
           _buildRegionTile(
             context,
-            'Paldea (Gen 9)', // Entrada corregida
-            906, 1025,       // Rango correcto para Paldea
+            'Paldea (Gen 9)', 
+            906, 1025,       
             'paldea.PNG',
           ),
-          // --- FIN DE LA CORRECCIÓN ---
         ],
       ),
     );
@@ -87,7 +83,6 @@ class RegionScreen extends StatelessWidget {
 
   /// Widget auxiliar para construir cada 'botón' de región con fondo.
   Widget _buildRegionTile(BuildContext context, String name, int startId, int endId, String imageName) {
-    // Usamos el nombre de imagen tal cual lo pasas
     final String imagePath = 'assets/images/$imageName';
 
     return Card(
@@ -110,7 +105,6 @@ class RegionScreen extends StatelessWidget {
         child: Stack(
           alignment: Alignment.centerLeft,
           children: [
-            // 1. La imagen de fondo
             Ink.image(
               image: AssetImage(imagePath), // Usa la ruta completa
               height: 100,
@@ -121,8 +115,7 @@ class RegionScreen extends StatelessWidget {
                 print("Error loading image $imagePath: $exception");
               },
             ),
-            
-            // 2. El gradiente "difuminado" (efecto oscuro)
+
             Container(
               height: 100,
               decoration: BoxDecoration(
@@ -137,7 +130,6 @@ class RegionScreen extends StatelessWidget {
               ),
             ),
             
-            // 3. El contenido (Texto e Icono)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Row(

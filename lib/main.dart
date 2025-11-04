@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'region_screen.dart'; // Importa la nueva pantalla de regiones
+import 'region_screen.dart'; 
 
 /// Punto de entrada principal de la aplicación.
 void main() {
-  // El Provider ya no se crea aquí, se creará por cada región.
   runApp(MyApp());
 }
 
@@ -32,7 +31,6 @@ class MyApp extends StatelessWidget {
           bodyMedium: TextStyle(fontSize: 14, color: Colors.grey[800]),
         ),
       ),
-      // La nueva pantalla de inicio es la lista de regiones.
       home: RegionScreen(),
     );
   }
