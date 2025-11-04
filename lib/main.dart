@@ -1,17 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'pokemon_provider.dart';
-import 'pokemon_screen.dart';
+import 'region_screen.dart'; // Importa la nueva pantalla de regiones
 
-
+/// Punto de entrada principal de la aplicación.
 void main() {
-  runApp(
-    // Provee el estado de PokemonProvider al árbol de widgets.
-    ChangeNotifierProvider(
-      create: (context) => PokemonProvider(),
-      child: MyApp(),
-    ),
-  );
+  // El Provider ya no se crea aquí, se creará por cada región.
+  runApp(MyApp());
 }
 
 /// Widget raíz de la aplicación.
@@ -19,9 +12,9 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'PokeApi App', 
-      themeMode: ThemeMode.light, // Forza el tema claro siempre
-      theme: ThemeData( // Define la apariencia general de la app
+      title: 'PokeApi App',
+      themeMode: ThemeMode.light,
+      theme: ThemeData(
         primarySwatch: Colors.red,
         scaffoldBackgroundColor: Colors.grey[100],
         appBarTheme: AppBarTheme(
@@ -39,7 +32,8 @@ class MyApp extends StatelessWidget {
           bodyMedium: TextStyle(fontSize: 14, color: Colors.grey[800]),
         ),
       ),
-      home: PokemonScreen(),
+      // La nueva pantalla de inicio es la lista de regiones.
+      home: RegionScreen(),
     );
   }
 }
