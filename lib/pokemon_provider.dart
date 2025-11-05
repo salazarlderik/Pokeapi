@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'api_service.dart';
 
-/// Gestiona el estado de UNA lista de Pokémon (ej. una región).
+/// Gestiona el estado relacionado con la lista de especies de una generación.
 class PokemonProvider extends ChangeNotifier {
   final ApiService _apiService = ApiService();
 
-  List<dynamic> _pokemonList = [];
-  List<dynamic> get pokemonList => _pokemonList;
+  /// Lista de "especies de pokémon" (contiene nombre y URL, no detalles).
+  List<dynamic> _pokemonEntries = [];
+  List<dynamic> get pokemonEntries => _pokemonEntries;
 
   bool _isLoading = true;
   bool get isLoading => _isLoading;
@@ -14,63 +15,39 @@ class PokemonProvider extends ChangeNotifier {
   String? _error;
   String? get error => _error;
 
-  String? _selectedTypeFilter;
-  String? get selectedTypeFilter => _selectedTypeFilter;
-
-  Set<String> _availableTypes = {};
-  List<String> get availableTypes => _availableTypes.toList()..sort();
-
-  /// El constructor ahora recibe el rango y comienza la carga.
-  PokemonProvider({required int startId, required int endId}) {
-    fetchPokemons(startId, endId);
+  /// Constructor: Inicia la carga de datos al crearse.
+  /// Requiere el ID de la generación (ej. 1, 2, 7).
+  PokemonProvider({required int generationId}) {
+    fetchGeneration(generationId);
   }
 
-  /// Obtiene los Pokémon para el rango especificado.
-  Future<void> fetchPokemons(int startId, int endId) async {
+  /// Obtiene las especies de la generación usando ApiService.
+  Future<void> fetchGeneration(int generationId) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      // Llama al servicio con el rango.
-      _pokemonList = await _apiService.fetchPokemonListByRange(startId, endId);
-      _extractAvailableTypes();
+      // Llama al nuevo método del servicio.
+      _pokemonEntries = await _apiService.fetchGenerationEntries(generationId);
+
+      // La API de generación a veces devuelve las especies desordenadas (ej. Gen 8).
+      // Las ordenamos por el ID que extraemos de la URL.
+      _pokemonEntries.sort((a, b) {
+        final urlA = a['url'] as String;
+        final urlB = b['url'] as String;
+        // Extrae el ID de la URL (ej. .../pokemon-species/25/)
+        final idA = int.parse(urlA.split('/')[urlA.split('/').length - 2]);
+        final idB = int.parse(urlB.split('/')[urlB.split('/').length - 2]);
+        return idA.compareTo(idB);
+      });
+      
     } catch (e) {
-      _error = 'Failed to load Pokémon list. Please check your connection.';
-      print('Error al obtener la lista de Pokémon: $e');
+      _error = 'Failed to load Pokédex. Please check your connection.';
+      print('Error al obtener la Generación: $e'); // Log interno
     } finally {
       _isLoading = false;
       notifyListeners();
-    }
-  }
-
-  /// Actualiza el tipo seleccionado para el filtro y notifica a los widgets.
-  void filterByType(String? type) {
-    _selectedTypeFilter = type;
-    notifyListeners();
-  }
-
-  /// Devuelve la lista filtrada.
-  List<dynamic> get filteredPokemonList {
-    if (_selectedTypeFilter == null) {
-      return _pokemonList;
-    } else {
-      return _pokemonList.where((pokemon) {
-        final types = (pokemon['types'] as List<dynamic>)
-            .map<String>((typeInfo) => typeInfo['type']['name'] as String)
-            .toList();
-        return types.contains(_selectedTypeFilter);
-      }).toList();
-    }
-  }
-
-  /// Método auxiliar para extraer y almacenar los tipos únicos.
-  void _extractAvailableTypes() {
-    _availableTypes.clear();
-    for (var pokemon in _pokemonList) {
-      final types = (pokemon['types'] as List<dynamic>)
-          .map<String>((typeInfo) => typeInfo['type']['name'] as String);
-      _availableTypes.addAll(types);
     }
   }
 }
