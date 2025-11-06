@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'utils/type_colors.dart';
-import 'package:http/http.dart' as http;
+import 'package:http/http.dart' as http; 
 import 'dart:convert';
 import 'api_service.dart';
 
@@ -24,7 +24,7 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
 
   bool _isLoadingAbilities = true;
   bool _isLoadingTypeDefenses = true;
-  bool _isChangingForm = false;
+  bool _isLoadingVarietyTypes = true; 
 
   Map<String, String> _abilityDetails = {};
   Map<String, double> _typeEffectiveness = {};
@@ -32,6 +32,8 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
   
   late Map<String, dynamic> _currentPokemonData;
   late String _currentVarietyName;
+
+  Map<String, String> _varietyFirstTypes = {}; 
 
   final List<String> _allTypes = [
     'normal', 'fire', 'water', 'electric', 'grass', 'ice', 
@@ -52,12 +54,46 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
     setState(() {
       _isLoadingAbilities = true;
       _isLoadingTypeDefenses = true;
+      _isLoadingVarietyTypes = true; 
     });
     
     await Future.wait([
       _fetchAbilityDetails(_currentPokemonData),
       _fetchTypeEffectiveness(_currentPokemonData),
+      _fetchVarietyTypes(), 
     ]);
+  }
+
+  Future<void> _fetchVarietyTypes() async {
+    Map<String, String> newVarietyFirstTypes = {};
+    List<Future<void>> typeFetchFutures = [];
+
+    for (var variety in _varieties) {
+      final String formName = variety['pokemon']['name'];
+      if (formName != widget.species['name'] && !_varietyFirstTypes.containsKey(formName)) {
+        typeFetchFutures.add(() async {
+          try {
+            final pokemonDetails = await _apiService.fetchPokemonDetails(formName);
+            final types = (pokemonDetails['types'] as List<dynamic>)
+                .map<String>((typeInfo) => typeInfo['type']['name'] as String)
+                .toList();
+            if (types.isNotEmpty) {
+              newVarietyFirstTypes[formName] = types.first;
+            }
+          } catch (e) {
+            print('Error fetching types for variety $formName: $e');
+          }
+        }());
+      }
+    }
+
+    await Future.wait(typeFetchFutures);
+    if (mounted) {
+      setState(() {
+        _varietyFirstTypes.addAll(newVarietyFirstTypes);
+        _isLoadingVarietyTypes = false;
+      });
+    }
   }
 
   Future<void> _fetchAbilityDetails(Map<String, dynamic> pokemonData) async {
@@ -134,8 +170,6 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
   Future<void> _onFormChanged(String? newFormName) async {
     if (newFormName == null || newFormName == _currentVarietyName) return;
 
-    setState(() { _isChangingForm = true; });
-
     try {
       final newPokemonData = await _apiService.fetchPokemonDetails(newFormName);
       
@@ -148,15 +182,12 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
       }
     } catch (e) {
       print('Error changing form: $e');
-    } finally {
-      if (mounted) {
-        setState(() { _isChangingForm = false; });
-      }
-    }
+    } 
   }
 
   @override
   Widget build(BuildContext context) {
+    // ... (El método 'build' no cambia, sigue igual) ...
     final String heroId = widget.species['id'].toString();
     final String name = _currentPokemonData['name'];
     
@@ -173,20 +204,20 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
     final int weight = _currentPokemonData['weight'];
     final stats = (_currentPokemonData['stats'] as List<dynamic>);
     
-    final mainColor = getTypeColor(types.first);
+    final mainColor = types.isNotEmpty ? getTypeColor(types.first) : Colors.grey;
 
     return Scaffold(
       appBar: AppBar(title: Text(name[0].toUpperCase() + name.substring(1)), backgroundColor: mainColor),
       body: Container(
         decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [mainColor.withOpacity(0.25), mainColor.withOpacity(0.10)])),
-        child: _isChangingForm
-            ? Center(child: CircularProgressIndicator())
-            : SingleChildScrollView(
+        child: SingleChildScrollView(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _buildFormSelector(), 
+                    _isLoadingVarietyTypes 
+                        ? Center(child: Padding(padding: const EdgeInsets.all(8.0), child: CircularProgressIndicator(strokeWidth: 2)))
+                        : _buildFormSelector(mainColor), 
                     Hero(
                       tag: 'pokemon-$heroId', 
                       child: imageUrl.isEmpty
@@ -194,6 +225,7 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
                           : Image.network(
                               imageUrl, 
                               width: 250, height: 250, fit: BoxFit.contain, 
+                              loadingBuilder: (c, ch, p) => p == null ? ch : Center(child: SizedBox(height: 250, child: CircularProgressIndicator())),
                               errorBuilder: (c, e, s) => Icon(Icons.error, size: 200, color: Colors.red)
                             )
                     ),
@@ -213,37 +245,28 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
                     Text('Type Defenses', textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.black87, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
                     
-                    // ===========================================
-                    // 👇 AQUÍ EMPIEZA EL CAMBIO (Table por GridView)
-                    // ===========================================
                     Card(
                       elevation: 2,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      clipBehavior: Clip.antiAlias, // Para que los bordes de la tabla se corten
-                      child: _isLoadingTypeDefenses
+                      clipBehavior: Clip.antiAlias,
+                      child: _isLoadingTypeDefenses 
                           ? Center(child: Padding(padding: const EdgeInsets.all(32.0), child: CircularProgressIndicator()))
                           : Table(
-                              // Esta es la clave para las "líneas delgadas"
                               border: TableBorder.all(
-                                color: Colors.grey.shade300, // Color del borde
-                                width: 1.0, // Grosor del borde
+                                color: Colors.grey.shade300,
+                                width: 1.0,
                               ),
                               children: [
-                                // Fila 1 (los primeros 9 tipos)
                                 _buildTypeRow(_allTypes.sublist(0, 9)),
-                                // Fila 2 (los últimos 9 tipos)
                                 _buildTypeRow(_allTypes.sublist(9, 18)),
                               ],
                             ),
                     ),
-                    // ===========================================
-                    // 👆 AQUÍ TERMINA EL CAMBIO
-                    // ===========================================
                     
                     const SizedBox(height: 24),
                     Text('Abilities', textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.black87, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
-                    _isLoadingAbilities
+                    _isLoadingAbilities 
                         ? const Center(child: CircularProgressIndicator())
                         : ListView.builder(
                             shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
@@ -270,43 +293,196 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
 
   // --- WIDGETS AUXILIARES (HELPERS) ---
 
-  // ===========================================
-  // 👇 NUEVA FUNCIÓN AUXILIAR PARA LA TABLA
-  // ===========================================
-  /// Construye una fila (TableRow) para la tabla de defensas de tipo.
   TableRow _buildTypeRow(List<String> types) {
+    // ... (Esta función no cambia) ...
     return TableRow(
       children: types.map((type) {
         final double multiplier = _typeEffectiveness[type] ?? 1.0;
-        // Reutilizamos el widget que ya teníamos para construir la celda
         return _buildTypeEffectivenessItem(type, multiplier);
       }).toList(),
     );
   }
 
-  Widget _buildFormSelector() {
+  // >>>>>>>>>>>>> FUNCIÓN _buildFormSelector MODIFICADA <<<<<<<<<<<<<
+  Widget _buildFormSelector(Color mainColor) {
     if (_varieties.length <= 1) { return SizedBox.shrink(); }
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      margin: const EdgeInsets.only(bottom: 16.0),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
-        child: DropdownButtonFormField<String>(
-          value: _currentVarietyName,
-          isExpanded: true,
-          decoration: InputDecoration(border: InputBorder.none, prefixIcon: Icon(Icons.compare_arrows_rounded, color: Colors.grey[700]), labelText: 'Form'),
-          onChanged: (String? newFormName) { _onFormChanged(newFormName); },
-          items: _varieties.map<DropdownMenuItem<String>>((variety) {
-            final String formName = variety['pokemon']['name'];
-            final String formattedName = formName.replaceAll('-', ' ').split(' ').map((word) => word[0].toUpperCase() + word.substring(1)).join(' ');
-            return DropdownMenuItem<String>(value: formName, child: Text(formattedName, overflow: TextOverflow.ellipsis));
-          }).toList(),
+
+    final Color gmaxColor = Colors.red[700]!;       
+    final Color primalColor = Colors.deepOrange[800]!;
+
+    List<Widget> chips = _varieties.map((variety) {
+      final String formName = variety['pokemon']['name'];
+      
+      final String formattedName = formName
+          .replaceAll('-', ' ')
+          .replaceFirst(widget.species['name'], '') 
+          .trim()
+          .split(' ')
+          .where((word) => word.isNotEmpty) 
+          .map((word) => word[0].toUpperCase() + word.substring(1))
+          .join(' ');
+      
+      final String displayName = formattedName.isEmpty ? 'Base' : formattedName;
+      final bool isSelected = formName == _currentVarietyName;
+
+      Color chipBackgroundColor = Colors.white; 
+      Color chipBorderColor = Colors.grey.shade300;
+      Color chipTextColor = Colors.black87;
+      Widget? chipAvatar;
+      Decoration? containerDecoration; 
+
+      if (displayName.contains('Mega')) {
+        chipBackgroundColor = Color(0xFF2C004F); 
+        chipBorderColor = Colors.transparent; 
+        chipTextColor = Colors.white; 
+        chipAvatar = CircleAvatar(
+          radius: 12, 
+          backgroundColor: Colors.transparent, 
+          child: Image.asset(
+            'assets/images/piedra_activadora.png',
+            fit: BoxFit.contain,
+            // ===========================================
+            // 👇 AQUÍ ESTÁ LA CORRECCIÓN
+            // ===========================================
+            // Reemplaza 'colorFilter' por 'color' y 'colorBlendMode'
+            color: Colors.white.withOpacity(0.1),
+            colorBlendMode: BlendMode.srcATop,
+            // ===========================================
+          ),
+        );
+
+        containerDecoration = BoxDecoration(
+          borderRadius: BorderRadius.circular(16), 
+          gradient: LinearGradient(
+            colors: [
+              Color(0xFF8A2BE2), 
+              Colors.blue.shade700,
+              Colors.cyan.shade400,
+              Colors.green.shade600,
+              Colors.yellow.shade700,
+              Colors.orange.shade700,
+              Colors.red.shade700, 
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.purple.withOpacity(0.6), 
+              blurRadius: 8,
+              spreadRadius: 1,
+              offset: Offset(0, 4),
+            ),
+          ],
+        );
+
+      } else if (displayName.contains('Alola') || displayName.contains('Galar') || displayName.contains('Hisui')) {
+        final String? firstType = _varietyFirstTypes[formName];
+        if (firstType != null) {
+          final regionalTypeColor = getTypeColor(firstType);
+          chipBackgroundColor = isSelected ? regionalTypeColor : regionalTypeColor.withOpacity(0.2);
+          chipBorderColor = isSelected ? regionalTypeColor : regionalTypeColor.withOpacity(0.5);
+          chipTextColor = isSelected 
+              ? Colors.white 
+              : regionalTypeColor.computeLuminance() > 0.5 ? Colors.black87 : Colors.white;
+        } else {
+          chipBackgroundColor = isSelected ? Colors.teal[600]! : Colors.teal[600]!.withOpacity(0.2);
+          chipBorderColor = isSelected ? Colors.teal[600]! : Colors.teal[600]!.withOpacity(0.5);
+          chipTextColor = isSelected ? Colors.white : Colors.black87;
+        }
+        
+      } else if (displayName.contains('Gmax')) {
+        chipBackgroundColor = isSelected ? gmaxColor : gmaxColor.withOpacity(0.2);
+        chipBorderColor = isSelected ? gmaxColor : gmaxColor.withOpacity(0.5);
+        chipTextColor = isSelected ? Colors.white : Colors.black87;
+      } else if (displayName.contains('Primal')) {
+        chipBackgroundColor = isSelected ? primalColor : primalColor.withOpacity(0.2);
+        chipBorderColor = isSelected ? primalColor : primalColor.withOpacity(0.5);
+        chipTextColor = isSelected ? Colors.white : Colors.black87;
+      } else if (displayName == 'Base') {
+        chipBackgroundColor = isSelected ? mainColor : Colors.white;
+        chipBorderColor = isSelected ? mainColor : Colors.grey.shade300;
+        chipTextColor = isSelected ? Colors.white : Colors.black87;
+      }
+
+      Widget chipWidget = Chip(
+        avatar: chipAvatar,
+        label: Text(
+          displayName,
+          style: TextStyle(
+            color: chipTextColor,
+            fontWeight: FontWeight.bold,
+          ),
         ),
-      ),
+        backgroundColor: chipBackgroundColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12), 
+          side: BorderSide(
+            color: chipBorderColor,
+            width: 2,
+          ),
+        ),
+        elevation: 0, 
+      );
+
+      if (containerDecoration != null) {
+        chipWidget = Container(
+          decoration: containerDecoration,
+          child: Padding(
+            padding: const EdgeInsets.all(2.0), 
+            child: chipWidget, 
+          ),
+        );
+      } else {
+        if (isSelected) {
+          chipWidget = Card(
+            elevation: 4,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(
+                color: chipBorderColor, 
+                width: 2,
+              ),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: chipWidget,
+          );
+        }
+      }
+
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4.0),
+        child: GestureDetector(
+          onTap: () => _onFormChanged(formName),
+          child: chipWidget,
+        ),
+      );
+    }).toList();
+
+    bool needsScrolling = _varieties.length > 3; 
+
+    Widget chipRow = Row(
+      mainAxisAlignment: needsScrolling ? MainAxisAlignment.start : MainAxisAlignment.center,
+      children: chips,
+    );
+
+    return Container(
+      height: 50,
+      margin: const EdgeInsets.only(bottom: 16.0),
+      child: needsScrolling
+          ? SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              physics: BouncingScrollPhysics(), 
+              child: chipRow,
+            )
+          : Center(
+              child: chipRow,
+            ),
     );
   }
 
+
+  // ... (El resto del archivo: _buildStatsCard, _buildStatColumn, etc. no cambia) ...
   Widget _buildStatsCard(String id, int weight, int height) {
     return Card(
       elevation: 2,
@@ -345,7 +521,6 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
     );
   }
 
-  /// Formatea el nombre de la estadística a un formato legible en inglés
   String _formatStatName(String statName) {
     switch (statName) {
       case 'hp': return 'HP';
@@ -358,7 +533,6 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
     }
   }
 
-  /// Construye una barra de progreso para una estadística base
   Widget _buildStatBar(dynamic stat) {
     final String name = stat['stat']['name'];
     final int value = stat['base_stat'];
@@ -391,7 +565,6 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
     );
   }
 
-  /// Construye un ícono pequeño para la tabla de tipos
   Widget _buildTypeIcon(String type) {
     final typeColor = getTypeColor(type);
     final typeImageUrl = 'https://raw.githubusercontent.com/duiker101/pokemon-type-svg-icons/master/icons/$type.svg';
@@ -404,7 +577,6 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
     );
   }
 
-  /// Construye un item para la grilla de defensas de tipo
   Widget _buildTypeEffectivenessItem(String type, double multiplier) {
     String multiplierText;
     Color multiplierColor;
@@ -417,15 +589,12 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
     else { multiplierText = ''; multiplierColor = Colors.transparent; }
 
     return Padding(
-      // ===========================================
-      // 👇 AJUSTE DE PADDING PARA LA TABLA
-      // ===========================================
-      padding: const EdgeInsets.symmetric(vertical: 6.0), // Ajustado para dar espacio
+      padding: const EdgeInsets.symmetric(vertical: 6.0), 
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           _buildTypeIcon(type),
-          const SizedBox(height: 4), // Ajustado para dar espacio
+          const SizedBox(height: 4), 
           SizedBox(
             height: 16, 
             child: Text(
