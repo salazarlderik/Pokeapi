@@ -80,7 +80,7 @@ class PokemonListCard extends StatelessWidget {
     );
   }
 
-  /// Construye el contenido visual de la tarjeta (Con Piedra Activadora Estética)
+  /// Construye el contenido visual de la tarjeta (Con Piedra Activadora Y Logo Gmax)
   Widget _buildPokemonCardContent(
     BuildContext context,
     Map<String, dynamic> pokemon,
@@ -99,10 +99,15 @@ class PokemonListCard extends StatelessWidget {
     final types = (pokemon['types'] as List<dynamic>).map<String>((type) => type['type']['name'] as String).toList();
     final cardColor = getTypeColor(types.first).withOpacity(0.15);
 
+    // Detectar si el Pokémon tiene alguna forma Mega
     bool hasMegaEvolution = false;
+    // Detectar si el Pokémon tiene forma Gmax
+    bool hasGmaxEvolution = false;
+
     if (species.containsKey('varieties')) {
       final varieties = species['varieties'] as List<dynamic>;
       hasMegaEvolution = varieties.any((v) => (v['pokemon']['name'] as String).contains('-mega'));
+      hasGmaxEvolution = varieties.any((v) => (v['pokemon']['name'] as String).contains('-gmax'));
     }
     
     return Card(
@@ -156,22 +161,38 @@ class PokemonListCard extends StatelessWidget {
             ],
           ),
 
-          // ==================================================
-          // 👇 CAMBIO AQUÍ: Medallón de Piedra Activadora
-          // ==================================================
+          // Medallón de Piedra Activadora (Esquina superior DERECHA)
           if (hasMegaEvolution)
             Positioned(
               top: 8,
               right: 8,
-              // Un Círculo (medallón) para que se vea más como un ícono
               child: CircleAvatar(
-                radius: 16, // Tamaño del círculo
-                // Fondo semitransparente para que se integre
+                radius: 16, 
                 backgroundColor: Colors.black.withOpacity(0.3), 
                 child: Padding(
-                  padding: const EdgeInsets.all(3.0), // Padding para la imagen
+                  padding: const EdgeInsets.all(3.0), 
                   child: Image.asset(
                     'assets/images/piedra_activadora.png',
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+            ),
+
+          // ==================================================
+          // 👇 NUEVO: Medallón de Gmax (Esquina superior IZQUIERDA)
+          // ==================================================
+          if (hasGmaxEvolution)
+            Positioned(
+              top: 8,
+              left: 8,
+              child: CircleAvatar(
+                radius: 16, 
+                backgroundColor: Colors.red.withOpacity(0.4), // Fondo rojo Gmax
+                child: Padding(
+                  padding: const EdgeInsets.all(3.0), 
+                  child: Image.asset(
+                    'assets/images/gmax_logo.png', // Asegúrate de tener esta imagen
                     fit: BoxFit.contain,
                   ),
                 ),

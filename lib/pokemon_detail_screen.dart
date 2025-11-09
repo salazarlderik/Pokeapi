@@ -303,7 +303,9 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
     );
   }
 
-  // >>>>>>>>>>>>> FUNCIÓN _buildFormSelector MODIFICADA <<<<<<<<<<<<<
+  // ==========================================================
+  // 👇 CAMBIOS EN EL SELECTOR DE FORMAS
+  // ==========================================================
   Widget _buildFormSelector(Color mainColor) {
     if (_varieties.length <= 1) { return SizedBox.shrink(); }
 
@@ -325,141 +327,144 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
       final String displayName = formattedName.isEmpty ? 'Base' : formattedName;
       final bool isSelected = formName == _currentVarietyName;
 
+      // Variables por defecto
       Color chipBackgroundColor = Colors.white; 
       Color chipBorderColor = Colors.grey.shade300;
       Color chipTextColor = Colors.black87;
       Widget? chipAvatar;
-      Decoration? containerDecoration; 
+      Widget? finalChipWidget; // Usaremos esto para construir el botón
 
       if (displayName.contains('Mega')) {
-        chipBackgroundColor = Color(0xFF2C004F); 
-        chipBorderColor = Colors.transparent; 
-        chipTextColor = Colors.white; 
+        // ========= CONSTRUCCIÓN DEL BOTÓN MEGA (SIN CHIP) =============
+        
         chipAvatar = CircleAvatar(
-          radius: 12, 
+          radius: 12,
           backgroundColor: Colors.transparent, 
-          child: Image.asset(
-            'assets/images/piedra_activadora.png',
-            fit: BoxFit.contain,
-            // ===========================================
-            // 👇 AQUÍ ESTÁ LA CORRECCIÓN
-            // ===========================================
-            // Reemplaza 'colorFilter' por 'color' y 'colorBlendMode'
-            color: Colors.white.withOpacity(0.1),
-            colorBlendMode: BlendMode.srcATop,
-            // ===========================================
-          ),
+          child: Image.asset('assets/images/piedra_activadora.png'), 
         );
 
-        containerDecoration = BoxDecoration(
-          borderRadius: BorderRadius.circular(16), 
-          gradient: LinearGradient(
-            colors: [
-              Color(0xFF8A2BE2), 
-              Colors.blue.shade700,
-              Colors.cyan.shade400,
-              Colors.green.shade600,
-              Colors.yellow.shade700,
-              Colors.orange.shade700,
-              Colors.red.shade700, 
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.purple.withOpacity(0.6), 
-              blurRadius: 8,
-              spreadRadius: 1,
-              offset: Offset(0, 4),
+        chipTextColor = isSelected ? Colors.white : Colors.black; 
+
+        finalChipWidget = Container(
+          height: 38, 
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            image: DecorationImage(
+              image: AssetImage('assets/images/image_556a7d.png'), // Tu imagen arcoíris
+              fit: BoxFit.cover,
+              opacity: isSelected ? 1.0 : 0.4, // Intenso vs. Leve
             ),
-          ],
+            border: Border.all(
+              color: isSelected ? Colors.grey.shade700 : Colors.grey.shade300,
+              width: isSelected ? 2 : 1.5,
+            ),
+            boxShadow: isSelected ? [ 
+              BoxShadow(
+                color: Colors.black.withOpacity(0.3), 
+                blurRadius: 6,
+                offset: Offset(0, 3),
+              ),
+            ] : null,
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 10.0), 
+        child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // La comprobación 'if' se ha ido
+              chipAvatar, // Puedes usar '!' para decirle a Dart que sabes que no es nulo
+              const SizedBox(width: 8), 
+              Text(
+                displayName,
+                style: TextStyle(
+                  color: chipTextColor,
+                  fontWeight: FontWeight.bold,
+                  shadows: [ // Sombra siempre para legibilidad sobre el arcoíris
+                    Shadow(blurRadius: 2.0, color: Colors.black.withOpacity(0.5), offset: Offset(1,1))
+                  ],
+                ),
+              ),
+            ],
+          ),
         );
+      
+      } else {
+        // ========= CONSTRUCCIÓN DE OTROS BOTONES (GMAX, REGIONAL, BASE) =============
+        
+        if (displayName.contains('Gmax')) {
+          Color themeColor = gmaxColor;
+          chipAvatar = CircleAvatar(
+            radius: 12,
+            backgroundColor: Colors.transparent,
+            child: Image.asset('assets/images/gmax_logo.png'),
+          );
+          chipBackgroundColor = isSelected ? themeColor : themeColor.withOpacity(0.2);
+          chipBorderColor = isSelected ? themeColor : themeColor.withOpacity(0.5);
+          chipTextColor = isSelected ? Colors.white : Colors.black87;
 
-      } else if (displayName.contains('Alola') || displayName.contains('Galar') || displayName.contains('Hisui')) {
-        final String? firstType = _varietyFirstTypes[formName];
-        if (firstType != null) {
-          final regionalTypeColor = getTypeColor(firstType);
-          chipBackgroundColor = isSelected ? regionalTypeColor : regionalTypeColor.withOpacity(0.2);
-          chipBorderColor = isSelected ? regionalTypeColor : regionalTypeColor.withOpacity(0.5);
-          chipTextColor = isSelected 
-              ? Colors.white 
-              : regionalTypeColor.computeLuminance() > 0.5 ? Colors.black87 : Colors.white;
-        } else {
-          chipBackgroundColor = isSelected ? Colors.teal[600]! : Colors.teal[600]!.withOpacity(0.2);
-          chipBorderColor = isSelected ? Colors.teal[600]! : Colors.teal[600]!.withOpacity(0.5);
+        } else if (displayName.contains('Alola') || displayName.contains('Galar') || displayName.contains('Hisui')) {
+          final String? firstType = _varietyFirstTypes[formName];
+          if (firstType != null) {
+            final regionalTypeColor = getTypeColor(firstType);
+            chipBackgroundColor = isSelected ? regionalTypeColor : regionalTypeColor.withOpacity(0.2);
+            chipBorderColor = isSelected ? regionalTypeColor : regionalTypeColor.withOpacity(0.5);
+            chipTextColor = isSelected 
+                ? Colors.white 
+                : regionalTypeColor.computeLuminance() > 0.5 ? Colors.black87 : Colors.white;
+          } else {
+            Color themeColor = Colors.teal[600]!;
+            chipBackgroundColor = isSelected ? themeColor : themeColor.withOpacity(0.2);
+            chipBorderColor = isSelected ? themeColor : themeColor.withOpacity(0.5);
+            chipTextColor = isSelected ? Colors.white : Colors.black87;
+          }
+          
+        } else if (displayName.contains('Primal')) {
+          Color themeColor = primalColor;
+          chipBackgroundColor = isSelected ? themeColor : themeColor.withOpacity(0.2);
+          chipBorderColor = isSelected ? themeColor : themeColor.withOpacity(0.5);
+          chipTextColor = isSelected ? Colors.white : Colors.black87;
+        } else if (displayName == 'Base') {
+          Color themeColor = mainColor;
+          chipBackgroundColor = isSelected ? themeColor : Colors.white;
+          chipBorderColor = isSelected ? themeColor : Colors.grey.shade300;
           chipTextColor = isSelected ? Colors.white : Colors.black87;
         }
-        
-      } else if (displayName.contains('Gmax')) {
-        chipBackgroundColor = isSelected ? gmaxColor : gmaxColor.withOpacity(0.2);
-        chipBorderColor = isSelected ? gmaxColor : gmaxColor.withOpacity(0.5);
-        chipTextColor = isSelected ? Colors.white : Colors.black87;
-      } else if (displayName.contains('Primal')) {
-        chipBackgroundColor = isSelected ? primalColor : primalColor.withOpacity(0.2);
-        chipBorderColor = isSelected ? primalColor : primalColor.withOpacity(0.5);
-        chipTextColor = isSelected ? Colors.white : Colors.black87;
-      } else if (displayName == 'Base') {
-        chipBackgroundColor = isSelected ? mainColor : Colors.white;
-        chipBorderColor = isSelected ? mainColor : Colors.grey.shade300;
-        chipTextColor = isSelected ? Colors.white : Colors.black87;
-      }
 
-      Widget chipWidget = Chip(
-        avatar: chipAvatar,
-        label: Text(
-          displayName,
-          style: TextStyle(
-            color: chipTextColor,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        backgroundColor: chipBackgroundColor,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12), 
-          side: BorderSide(
-            color: chipBorderColor,
-            width: 2,
-          ),
-        ),
-        elevation: 0, 
-      );
-
-      if (containerDecoration != null) {
-        chipWidget = Container(
-          decoration: containerDecoration,
-          child: Padding(
-            padding: const EdgeInsets.all(2.0), 
-            child: chipWidget, 
-          ),
-        );
-      } else {
-        if (isSelected) {
-          chipWidget = Card(
-            elevation: 4,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(
-                color: chipBorderColor, 
-                width: 2,
-              ),
+        // Usamos el Chip normal para todos los demás
+        finalChipWidget = Chip(
+          avatar: chipAvatar,
+          label: Text(
+            displayName,
+            style: TextStyle(
+              color: chipTextColor,
+              fontWeight: FontWeight.bold,
+              shadows: isSelected && chipTextColor == Colors.white ? [
+                Shadow(blurRadius: 2.0, color: Colors.black.withOpacity(0.5), offset: Offset(1,1))
+              ] : null,
             ),
-            clipBehavior: Clip.antiAlias,
-            child: chipWidget,
-          );
-        }
+          ),
+          backgroundColor: chipBackgroundColor, 
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12), 
+            side: BorderSide(
+              color: chipBorderColor,
+              width: 2,
+            ),
+          ),
+          elevation: isSelected ? 4 : 0,
+        );
       }
-
+      
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 4.0),
         child: GestureDetector(
           onTap: () => _onFormChanged(formName),
-          child: chipWidget,
+          child: finalChipWidget, // Usamos el widget final (sea Container o Chip)
         ),
       );
     }).toList();
 
-    bool needsScrolling = _varieties.length > 3; 
+    bool needsScrolling = _varieties.length > 2;
 
     Widget chipRow = Row(
       mainAxisAlignment: needsScrolling ? MainAxisAlignment.start : MainAxisAlignment.center,
@@ -521,13 +526,16 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
     );
   }
 
+  // ===========================================
+  // 👇 AQUÍ ESTÁ LA CORRECCIÓN DEL COMPILADOR
+  // ===========================================
   String _formatStatName(String statName) {
     switch (statName) {
       case 'hp': return 'HP';
       case 'attack': return 'Attack';
       case 'defense': return 'Defense';
       case 'special-attack': return 'Sp. Atk';
-      case 'special-defense': return 'Sp. Def';
+      case 'special-defense': return 'Sp. Def'; // <-- 'return' AÑADIDO
       case 'speed': return 'Speed';
       default: return statName.replaceAll('-', ' ').split(' ').map((word) => word[0].toUpperCase() + word.substring(1)).join(' ');
     }
