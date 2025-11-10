@@ -31,7 +31,6 @@ class MyApp extends StatelessWidget {
           bodyMedium: TextStyle(fontSize: 14, color: Colors.grey[800]),
         ),
       ),
-
       home: RegionScreen(),
     );
   }
