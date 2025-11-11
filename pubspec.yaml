@@ -15,6 +15,7 @@ dependencies:
   http: ^1.2.1
   flutter_svg: ^2.0.10+110
   provider: ^6.1.2
+  easy_localization: ^3.0.3 
 
 
   cupertino_icons: ^1.0.8
@@ -35,6 +36,8 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/translations/
+    - assets/images/hisui.png
 
   # assets:
   #   - images/a_dot_burr.jpeg
