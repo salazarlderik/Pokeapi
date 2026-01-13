@@ -93,7 +93,7 @@ class PokemonScreen extends StatelessWidget {
               final entry = pokemonEntries[index] as Map<String, dynamic>;
               /// Cada ítem es una [PokemonListCard] que maneja su propia carga.
               return PokemonListCard(
-                pokemonSpecies: entry,
+                pokemonSpecies: entry, pokemon: null,
               );
             },
           );
