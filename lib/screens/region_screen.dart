@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'pokemon_provider.dart';
+import '../providers/pokemon_provider.dart';
 import 'pokemon_screen.dart';
 import 'package:easy_localization/easy_localization.dart';
 

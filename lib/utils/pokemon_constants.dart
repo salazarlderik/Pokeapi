@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 class PokeConstants {
   // Lista completa de tipos
   static const List<String> allTypes = [

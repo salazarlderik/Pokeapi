@@ -1,4 +1,4 @@
-import 'pokemon_extensions.dart';
+import '../utils/pokemon_extensions.dart';
 
 class PokemonModel {
   final int id;

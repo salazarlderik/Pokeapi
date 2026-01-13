@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:cached_network_image/cached_network_image.dart'; // Nuevo
-import 'api_service.dart';
-import 'pokemon_detail_screen.dart';
-import 'pokemon_extensions.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../services/api_service.dart';
+import '../screens/pokemon_detail_screen.dart';
+import '../utils/pokemon_extensions.dart';
 
 class PokemonListCard extends StatefulWidget {
-  final Map<String, dynamic> pokemonSpecies;
-  const PokemonListCard({super.key, required this.pokemonSpecies, required pokemon});
+  final Map<String, dynamic> pokemonSpecies; // Nombre corregido
+  const PokemonListCard({super.key, required this.pokemonSpecies});
 
   @override
   State<PokemonListCard> createState() => _PokemonListCardState();
@@ -24,7 +24,6 @@ class _PokemonListCardState extends State<PokemonListCard> {
   }
 
   Future<List<Map<String, dynamic>>> _loadData() async {
-    // Carga paralela de datos
     return Future.wait([
       _apiService.fetchPokemonSpecies(widget.pokemonSpecies['name']),
       _apiService.fetchDefaultPokemonDetailsFromSpecies(widget.pokemonSpecies['name']),
@@ -42,9 +41,9 @@ class _PokemonListCardState extends State<PokemonListCard> {
 
         final species = snapshot.data![0];
         final pokemon = snapshot.data![1];
-        
         final types = (pokemon['types'] as List).map((t) => t['type']['name'] as String).toList();
-        final mainColor = types.first.toTypeColor;
+        final mainColor = types.first.toTypeColor.withValues(alpha: 0.15); // Corrección para advertencia deprecada
+        
         final id = species['id'];
         final imageUrl = pokemon['sprites']['other']?['official-artwork']?['front_default'] ?? pokemon['sprites']['front_default'] ?? '';
 
@@ -54,7 +53,7 @@ class _PokemonListCardState extends State<PokemonListCard> {
 
         return Card(
           elevation: 3,
-          color: mainColor.withOpacity(0.15),
+          color: mainColor,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
@@ -72,14 +71,13 @@ class _PokemonListCardState extends State<PokemonListCard> {
                         tag: 'pokemon-$id',
                         child: Padding(
                           padding: const EdgeInsets.all(12),
-                          // CAMBIO CLAVE: CachedNetworkImage para velocidad
                           child: imageUrl.isEmpty 
                             ? const Icon(Icons.image_not_supported) 
                             : CachedNetworkImage(
                                 imageUrl: imageUrl,
-                                fit: BoxFit.contain,
                                 placeholder: (context, url) => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
                                 errorWidget: (context, url, error) => const Icon(Icons.error),
+                                fit: BoxFit.contain,
                               ),
                         ),
                       ),
@@ -89,7 +87,8 @@ class _PokemonListCardState extends State<PokemonListCard> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text('#${id.toString().padLeft(3, '0')}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black.withOpacity(0.4))),
+                          Text('#${id.toString().padLeft(3, '0')}', 
+                               style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black.withValues(alpha: 0.4))),
                           Text((species['name'] as String).capitalize, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                           const SizedBox(height: 6),
                           Wrap(
@@ -103,12 +102,12 @@ class _PokemonListCardState extends State<PokemonListCard> {
                 ),
                 if (hasMega)
                   Positioned(top: 8, right: 8, child: CircleAvatar(
-                    radius: 14, backgroundColor: Colors.black.withOpacity(0.3),
+                    radius: 14, backgroundColor: Colors.black.withValues(alpha: 0.3),
                     child: Padding(padding: const EdgeInsets.all(2), child: Image.asset('assets/images/piedra_activadora.png')),
                   )),
                 if (hasGmax)
                   Positioned(top: 8, left: 8, child: CircleAvatar(
-                    radius: 14, backgroundColor: Colors.red.withOpacity(0.4),
+                    radius: 14, backgroundColor: Colors.red.withValues(alpha: 0.4),
                     child: Padding(padding: const EdgeInsets.all(2), child: Image.asset('assets/images/gmax_logo.png')),
                   )),
               ],
@@ -130,7 +129,7 @@ class _PokemonListCardState extends State<PokemonListCard> {
         label: Text(
           'types.$type'.tr().toUpperCase(),
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10, shadows: [
-            Shadow(blurRadius: 2.0, color: Colors.black.withOpacity(0.3), offset: const Offset(1, 1)),
+            Shadow(blurRadius: 2.0, color: Colors.black.withValues(alpha: 0.3), offset: const Offset(1, 1)),
           ]),
         ),
       ),

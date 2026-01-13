@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'region_screen.dart';
-import 'api_service.dart'; // Importante
+import 'screens/region_screen.dart';
+import 'services/api_service.dart'; // Importante
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
