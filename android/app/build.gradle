@@ -1,11 +1,11 @@
 plugins {
     id "com.android.application"
     id "kotlin-android"
-    // El plugin de Flutter debe ir después de Android y Kotlin
     id "dev.flutter.flutter-gradle-plugin"
 }
 
 android {
+    // Definimos el namespace para tu app principal
     namespace = "com.example.pokeapi_app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
@@ -16,13 +16,13 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_1_8
+        jvmTarget = "1.8"
     }
 
     defaultConfig {
         applicationId = "com.example.pokeapi_app"
         
-        // CAMBIO: Forzamos 21 para que las librerías de caché y almacenamiento funcionen
+        // Isar requiere como mínimo la versión 21
         minSdk = 21 
         
         targetSdk = flutter.targetSdkVersion
@@ -32,6 +32,7 @@ android {
 
     buildTypes {
         release {
+            // Configuración básica para pruebas
             signingConfig = signingConfigs.debug
         }
     }

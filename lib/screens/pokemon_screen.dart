@@ -30,7 +30,7 @@ class _PokemonScreenState extends State<PokemonScreen> {
   @override
   Widget build(BuildContext context) {
     // Usamos listen: false aquí para que el build principal no se confunda
-    final provider = Provider.of<PokemonProvider>(context, listen: false);
+    Provider.of<PokemonProvider>(context, listen: false);
 
     return Scaffold(
       appBar: AppBar(

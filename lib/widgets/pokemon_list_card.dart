@@ -6,7 +6,7 @@ import '../screens/pokemon_detail_screen.dart';
 import '../utils/pokemon_extensions.dart';
 
 class PokemonListCard extends StatefulWidget {
-  final Map<String, dynamic> pokemonSpecies; // Nombre corregido
+  final Map<String, dynamic> pokemonSpecies; 
   const PokemonListCard({super.key, required this.pokemonSpecies});
 
   @override
@@ -20,11 +20,7 @@ class _PokemonListCardState extends State<PokemonListCard> {
   @override
   void initState() {
     super.initState();
-    _dataFuture = _loadData();
-  }
-
-  Future<List<Map<String, dynamic>>> _loadData() async {
-    return Future.wait([
+    _dataFuture = Future.wait([
       _apiService.fetchPokemonSpecies(widget.pokemonSpecies['name']),
       _apiService.fetchDefaultPokemonDetailsFromSpecies(widget.pokemonSpecies['name']),
     ]);
@@ -35,50 +31,74 @@ class _PokemonListCardState extends State<PokemonListCard> {
     return FutureBuilder<List<Map<String, dynamic>>>(
       future: _dataFuture,
       builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const Card(child: Center(child: CircularProgressIndicator()));
-        }
+        if (!snapshot.hasData) return const Card(child: Center(child: CircularProgressIndicator()));
 
         final species = snapshot.data![0];
         final pokemon = snapshot.data![1];
         final types = (pokemon['types'] as List).map((t) => t['type']['name'] as String).toList();
-        final mainColor = types.first.toTypeColor.withValues(alpha: 0.15); // Corrección para advertencia deprecada
         
-        final id = species['id'];
-        final imageUrl = pokemon['sprites']['other']?['official-artwork']?['front_default'] ?? pokemon['sprites']['front_default'] ?? '';
+        final String firstType = types.first.toLowerCase();
+        final Color mainColor = firstType.toTypeColor;
+
+        // --- JERARQUÍA DE OPACIDADES ACTUALIZADA ---
+        double backgroundOpacity = 0.15; // Planta, Psíquico y Normal
+
+        if (firstType == 'rock' || firstType == 'poison') {
+          backgroundOpacity = 0.28; // Los más fuertes y oscuros
+        } else if (firstType == 'fairy') {
+          backgroundOpacity = 0.25; // Hada potente
+        } else if (firstType == 'bug') {
+          backgroundOpacity = 0.40; // BICHO: El más claro de la tarjeta
+        } else if (firstType == 'ice') {
+          backgroundOpacity = 0.30;}
+        
 
         final varieties = species['varieties'] as List;
         final hasMega = varieties.any((v) => (v['pokemon']['name'] as String).contains('-mega'));
         final hasGmax = varieties.any((v) => (v['pokemon']['name'] as String).contains('-gmax'));
 
         return Card(
-          elevation: 3,
-          color: mainColor,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          clipBehavior: Clip.antiAlias,
+          elevation: 4,
+          color: mainColor.withValues(alpha: backgroundOpacity),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           child: InkWell(
-            onTap: () => Navigator.push(context, MaterialPageRoute(
-              builder: (context) => PokemonDetailScreen(pokemon: pokemon, species: species),
-            )),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => PokemonDetailScreen(pokemon: pokemon, species: species))),
             child: Stack(
               children: [
+                // Resplandor trasero (Ajustado según opacidad de la tarjeta)
+                Positioned(
+                  top: -10, right: -10,
+                  child: Container(
+                    width: 120, height: 120,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          mainColor.withValues(alpha: (backgroundOpacity > 0.15 ? 0.5 : 0.4)),
+                          mainColor.withValues(alpha: 0.0)
+                        ]
+                      ),
+                    ),
+                  ),
+                ),
+                
+                // Iconos Mega/Gmax (Tamaño 25 y margen 10)
+                if (hasMega) Positioned(top: 10, right: 10, child: Image.asset('assets/images/piedra_activadora.png', width: 25)),
+                if (hasGmax) Positioned(top: 10, left: 10, child: Image.asset('assets/images/gmax_logo.png', width: 25)),
+                
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Expanded(
                       flex: 3,
                       child: Hero(
-                        tag: 'pokemon-$id',
+                        tag: 'pokemon-${species['id']}',
                         child: Padding(
                           padding: const EdgeInsets.all(12),
-                          child: imageUrl.isEmpty 
-                            ? const Icon(Icons.image_not_supported) 
-                            : CachedNetworkImage(
-                                imageUrl: imageUrl,
-                                placeholder: (context, url) => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                                errorWidget: (context, url, error) => const Icon(Icons.error),
-                                fit: BoxFit.contain,
-                              ),
+                          child: CachedNetworkImage(
+                            imageUrl: pokemon['sprites']['other']?['official-artwork']?['front_default'] ?? '',
+                            fit: BoxFit.contain,
+                          ),
                         ),
                       ),
                     ),
@@ -87,12 +107,11 @@ class _PokemonListCardState extends State<PokemonListCard> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text('#${id.toString().padLeft(3, '0')}', 
-                               style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black.withValues(alpha: 0.4))),
-                          Text((species['name'] as String).capitalize, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 6),
+                          Text((species['name'] as String).capitalize, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 8),
                           Wrap(
-                            spacing: 4, runSpacing: 4, alignment: WrapAlignment.center,
+                            spacing: 6,
+                            alignment: WrapAlignment.center,
                             children: types.map((t) => _buildTypeChip(t)).toList(),
                           ),
                         ],
@@ -100,16 +119,6 @@ class _PokemonListCardState extends State<PokemonListCard> {
                     ),
                   ],
                 ),
-                if (hasMega)
-                  Positioned(top: 8, right: 8, child: CircleAvatar(
-                    radius: 14, backgroundColor: Colors.black.withValues(alpha: 0.3),
-                    child: Padding(padding: const EdgeInsets.all(2), child: Image.asset('assets/images/piedra_activadora.png')),
-                  )),
-                if (hasGmax)
-                  Positioned(top: 8, left: 8, child: CircleAvatar(
-                    radius: 14, backgroundColor: Colors.red.withValues(alpha: 0.4),
-                    child: Padding(padding: const EdgeInsets.all(2), child: Image.asset('assets/images/gmax_logo.png')),
-                  )),
               ],
             ),
           ),
@@ -119,19 +128,15 @@ class _PokemonListCardState extends State<PokemonListCard> {
   }
 
   Widget _buildTypeChip(String type) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 2),
-      child: Chip(
-        backgroundColor: type.toTypeColor,
-        labelPadding: const EdgeInsets.symmetric(horizontal: 8.0),
-        padding: const EdgeInsets.all(0),
-        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        label: Text(
-          'types.$type'.tr().toUpperCase(),
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10, shadows: [
-            Shadow(blurRadius: 2.0, color: Colors.black.withValues(alpha: 0.3), offset: const Offset(1, 1)),
-          ]),
-        ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: type.toTypeColor,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        'types.$type'.tr().toUpperCase(), 
+        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)
       ),
     );
   }

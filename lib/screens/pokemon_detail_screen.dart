@@ -21,7 +21,7 @@ class PokemonDetailScreen extends StatefulWidget {
 
 class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
   final ApiService _apiService = ApiService();
-
+  // ... (Variables de estado booleanas y mapas omitidos por brevedad, son los mismos) ...
   bool _isLoadingAbilities = true;
   bool _isLoadingTypeDefenses = true;
   bool _isLoadingVarietyTypes = true;
@@ -48,7 +48,8 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
     _regionSuffixForEvo = _getRegionSuffix();
     _fetchEvolutionChain();
   }
-
+  
+  // ... (Métodos didChangeDependencies, _getRegionSuffix y los fetchers omitidos por brevedad, son los mismos) ...
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -163,12 +164,26 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(name.toString().capitalize),
+        // --- APPBAR CORREGIDO ---
+        centerTitle: true, // Título centrado
+        title: Text(
+          name.toString().capitalize,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold, // Texto grueso (negrita)
+            fontSize: 22, // Tamaño un poco más grande
+          ),
+        ),
         backgroundColor: mainColor,
+        elevation: 0,
         actions: [IconButton(icon: const Icon(Icons.language), onPressed: () => context.setLocale(context.locale == const Locale('en') ? const Locale('es') : const Locale('en')))],
       ),
       body: Container(
-        decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [mainColor.withOpacity(0.25), mainColor.withOpacity(0.1)])),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter, end: Alignment.bottomCenter,
+            colors: [mainColor.withValues(alpha: 0.3), Theme.of(context).scaffoldBackgroundColor],
+          ),
+        ),
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -180,10 +195,7 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
               Text(name.toString().toUpperCase(), textAlign: TextAlign.center, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
               Wrap(alignment: WrapAlignment.center, spacing: 8, children: types.map((t) => _buildTypeChip(t)).toList()),
               const SizedBox(height: 24),
-              
-              // --- LLAMADA A LA TARJETA BALANCEADA ---
               _buildStatsCard(widget.species['id'].toString(), _currentPokemonData['weight'], _currentPokemonData['height']),
-              
               const SizedBox(height: 24),
               _sectionTitle('headers.base_stats'),
               Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(children: (_currentPokemonData['stats'] as List).map((s) => _buildStatBar(s)).toList()))),
@@ -207,8 +219,9 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
 
   Widget _buildTypeChip(String type) => Chip(
     backgroundColor: type.toTypeColor,
-    label: Text('types.$type'.tr().toUpperCase(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-    avatar: SvgPicture.network('https://raw.githubusercontent.com/duiker101/pokemon-type-svg-icons/master/icons/$type.svg', width: 20, colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn)),
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    label: Text('types.$type'.tr().toUpperCase(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+    avatar: SvgPicture.network('https://raw.githubusercontent.com/duiker101/pokemon-type-svg-icons/master/icons/$type.svg', width: 18, colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn)),
   );
 
   Widget _buildFormSelector(Color mainColor) {
@@ -239,13 +252,12 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
     return Card(child: Padding(padding: const EdgeInsets.all(16.0), child: SingleChildScrollView(scrollDirection: Axis.horizontal, physics: const BouncingScrollPhysics(), child: ConstrainedBox(constraints: BoxConstraints(minWidth: MediaQuery.of(context).size.width - 64), child: Center(child: EvolutionChainWidget(chain: _evolutionChainData!['chain'], regionSuffix: _regionSuffixForEvo, currentPokemonName: _currentPokemonNameForEvo))))));
   }
 
-  // --- TARJETA DE ESTADÍSTICAS BALANCEADA (TAMAÑO MEDIO) ---
   Widget _buildStatsCard(String id, int weight, int height) {
     return Card(
       elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10), // Padding medio
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 10),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
@@ -260,18 +272,18 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
     );
   }
 
-  Widget _vDivider() => Container(width: 1, height: 30, color: Colors.grey[300]); // Divisor más corto
+  Widget _vDivider() => Container(width: 1, height: 30, color: Colors.grey[300]);
 
   Widget _statCol(String label, String value, IconData icon) {
     return Expanded(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: Colors.grey[500], size: 15), // Icono de tamaño medio
+          Icon(icon, color: Colors.grey[500], size: 22),
           const SizedBox(height: 8),
-          Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87)), // Valor 16pt
+          Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
           const SizedBox(height: 4),
-          Text(label.toUpperCase(), style: TextStyle(fontSize: 11, color: Colors.grey[500], fontWeight: FontWeight.w600)), // Etiqueta 11pt
+          Text(label.toUpperCase(), style: TextStyle(fontSize: 11, color: Colors.grey[500], fontWeight: FontWeight.w600)),
         ],
       ),
     );

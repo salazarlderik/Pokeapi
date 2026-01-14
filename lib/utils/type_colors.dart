@@ -18,7 +18,7 @@ Color getTypeColor(String type) {
     case 'flying': return Colors.lightBlue[300]!;
     case 'poison': return Colors.purple[800]!;
     case 'ground': return Colors.brown[400]!;
-    case 'rock': return Colors.brown[600]!;
+    case 'rock': return Colors.brown[700]!;
     case 'bug': return Colors.lightGreen[500]!;
     case 'ghost': return Colors.deepPurple;
     case 'steel': return Colors.blueGrey;

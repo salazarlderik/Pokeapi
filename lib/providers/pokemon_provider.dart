@@ -45,16 +45,17 @@ class PokemonProvider extends ChangeNotifier {
     super.dispose();
   }
 
+  // PROTECCIÓN CLAVE: Solo notifica si el provider sigue vivo
   @override
   void notifyListeners() {
     if (!_isDisposed) super.notifyListeners();
   }
 
-  // --- REINICIO SILENCIOSO (Para cuando usamos la flecha de regreso) ---
+  // MÉTODO SOLICITADO: Reinicio total
   void resetToDefault() {
     _selectedType = null;
     _searchQuery = "";
-    // No notificamos aquí para evitar choques con la navegación
+    notifyListeners();
   }
 
   Future<void> fetchGeneration(int generationId, {String? regionFilter}) async {
@@ -88,14 +89,14 @@ class PokemonProvider extends ChangeNotifier {
 
   Future<void> _loadTypesInBackground() async {
     for (var p in _allPokemon) {
-      if (_isDisposed) return;
+      if (_isDisposed) return; // Detener si se cerró la pantalla
       try {
         final d = await _apiService.fetchDefaultPokemonDetailsFromSpecies(p['name']);
-        if (_isDisposed) return; // Doble check para evitar error de JNI
+        if (_isDisposed) return;
         _pokemonTypesMap[p['name']] = (d['types'] as List).map((t) => t['type']['name'] as String).toList();
-        await Future.delayed(const Duration(milliseconds: 15)); 
       } catch (_) {}
     }
+    notifyListeners(); 
   }
 
   void updateSearch(String query) {
