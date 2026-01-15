@@ -43,16 +43,21 @@ class _PokemonListCardState extends State<PokemonListCard> {
         // --- JERARQUÍA DE OPACIDADES ACTUALIZADA ---
         double backgroundOpacity = 0.15; // Planta, Psíquico y Normal
 
-        if (firstType == 'rock' || firstType == 'poison') {
-          backgroundOpacity = 0.28; // Los más fuertes y oscuros
+        if (firstType == 'rock' ) {
+          backgroundOpacity = 0.48; // Los más fuertes y oscuros
         } else if (firstType == 'fairy') {
           backgroundOpacity = 0.25; // Hada potente
         } else if (firstType == 'bug') {
           backgroundOpacity = 0.40; // BICHO: El más claro de la tarjeta
         } else if (firstType == 'ice') {
           backgroundOpacity = 0.30;}
+          else if (firstType == 'poison') {
+          backgroundOpacity = 0.30;}
+          else if (firstType == 'flying') {
+          backgroundOpacity = 0.60;}
+          else if (firstType == 'dark') {
+          backgroundOpacity = 0.10;}
         
-
         final varieties = species['varieties'] as List;
         final hasMega = varieties.any((v) => (v['pokemon']['name'] as String).contains('-mega'));
         final hasGmax = varieties.any((v) => (v['pokemon']['name'] as String).contains('-gmax'));

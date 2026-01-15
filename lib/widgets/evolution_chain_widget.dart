@@ -32,33 +32,38 @@ class EvolutionChainWidget extends StatelessWidget {
     if (filtered.isEmpty) return node;
 
     return Row(
-      mainAxisSize: MainAxisSize.min, // Crucial para el centrado
+      mainAxisSize: MainAxisSize.min,
       children: [
         node,
         Column(
           mainAxisSize: MainAxisSize.min,
-          children: filtered.map((e) => Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildArrow(EvolutionHelper.formatEvoDetails(e['evolution_details'], e['species']['name'])),
-              _buildBranch(e, suffix, context),
-            ],
-          )).toList(),
+          children: filtered.map((e) {
+            // Obtenemos el nombre real de la evolución (ej: sandslash-alola)
+            String targetEvoName = EvolutionHelper.getEvoNodeName(e['species']['name'], suffix);
+            
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildArrow(EvolutionHelper.formatEvoDetails(e['evolution_details'], targetEvoName)),
+                _buildBranch(e, suffix, context),
+              ],
+            );
+          }).toList(),
         ),
       ],
     );
   }
 
   Widget _buildArrow(String text) => Container(
-    width: 100,
-    padding: const EdgeInsets.all(8),
+    width: 90,
+    padding: const EdgeInsets.symmetric(horizontal: 4),
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(Icons.arrow_forward, color: Colors.grey), 
+        const Icon(Icons.arrow_forward, color: Colors.grey, size: 20), 
         Text(
           text, 
-          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold), 
+          style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.black87), 
           textAlign: TextAlign.center
         )
       ],
@@ -90,16 +95,17 @@ class EvolutionChainWidget extends StatelessWidget {
             padding: const EdgeInsets.all(8),
             margin: const EdgeInsets.all(4),
             decoration: BoxDecoration(
-              color: isCur ? color.withOpacity(0.1) : Colors.white.withOpacity(0.5), 
+              color: isCur ? color.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.5), 
               border: Border.all(color: isCur ? color : Colors.grey.shade300, width: 2), 
               borderRadius: BorderRadius.circular(12)
             ),
             child: Column(
               children: [
-                Image.network(data['sprites']['front_default'] ?? '', height: 70, fit: BoxFit.contain),
+                Image.network(data['sprites']['front_default'] ?? '', height: 60, fit: BoxFit.contain),
+                const SizedBox(height: 4),
                 Text(
                   data['name'].toString().cleanName, 
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold), 
+                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold), 
                   textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,

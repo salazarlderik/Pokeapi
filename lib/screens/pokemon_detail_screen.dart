@@ -21,7 +21,7 @@ class PokemonDetailScreen extends StatefulWidget {
 
 class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
   final ApiService _apiService = ApiService();
-  // ... (Variables de estado booleanas y mapas omitidos por brevedad, son los mismos) ...
+  
   bool _isLoadingAbilities = true;
   bool _isLoadingTypeDefenses = true;
   bool _isLoadingVarietyTypes = true;
@@ -48,8 +48,7 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
     _regionSuffixForEvo = _getRegionSuffix();
     _fetchEvolutionChain();
   }
-  
-  // ... (Métodos didChangeDependencies, _getRegionSuffix y los fetchers omitidos por brevedad, son los mismos) ...
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -164,18 +163,47 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        // --- APPBAR CORREGIDO ---
-        centerTitle: true, // Título centrado
-        title: Text(
-          name.toString().capitalize,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold, // Texto grueso (negrita)
-            fontSize: 22, // Tamaño un poco más grande
-          ),
-        ),
+        // --- APPBAR ESTILO TECH/ROTOM ---
+        centerTitle: true,
         backgroundColor: mainColor,
         elevation: 0,
-        actions: [IconButton(icon: const Icon(Icons.language), onPressed: () => context.setLocale(context.locale == const Locale('en') ? const Locale('es') : const Locale('en')))],
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Indicador LED Azul decorativo
+            Container(
+              width: 12, height: 12,
+              decoration: BoxDecoration(
+                color: Colors.lightBlueAccent,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.blue.withValues(alpha: 0.7), 
+                    blurRadius: 6, 
+                    spreadRadius: 2
+                  )
+                ],
+              ),
+            ),
+            const SizedBox(width: 15),
+            Text(
+              name.toString().capitalize,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold, // Negrita
+                fontSize: 22, // Tamaño 22
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.language, color: Colors.white), 
+            onPressed: () => context.setLocale(
+              context.locale == const Locale('en') ? const Locale('es') : const Locale('en')
+            )
+          )
+        ],
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -243,7 +271,7 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
   }
 
   Widget _buildMegaChip(String label, String fName, bool isSel) {
-    return GestureDetector(onTap: () => _onFormChanged(fName), child: Container(margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8), padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), gradient: const LinearGradient(colors: [Color(0xFF63D8FF), Color(0xFF8B55FF), Color(0xFFFFC75F)]), border: Border.all(color: Colors.white.withOpacity(0.6), width: 1.2), boxShadow: isSel ? [const BoxShadow(blurRadius: 4, offset: Offset(0, 2))] : null), child: Row(mainAxisSize: MainAxisSize.min, children: [Image.asset('assets/images/piedra_activadora.png', width: 20), const SizedBox(width: 8), Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))])));
+    return GestureDetector(onTap: () => _onFormChanged(fName), child: Container(margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8), padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), gradient: const LinearGradient(colors: [Color(0xFF63D8FF), Color(0xFF8B55FF), Color(0xFFFFC75F)]), border: Border.all(color: Colors.white.withValues(alpha: 0.6), width: 1.2), boxShadow: isSel ? [const BoxShadow(blurRadius: 4, offset: Offset(0, 2))] : null), child: Row(mainAxisSize: MainAxisSize.min, children: [Image.asset('assets/images/piedra_activadora.png', width: 20), const SizedBox(width: 8), Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))])));
   }
 
   Widget _buildEvolutionSection() {
@@ -294,7 +322,7 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
     final color = val <= 59 ? Colors.red : val <= 99 ? Colors.yellow.shade700 : val <= 159 ? Colors.green : Colors.blue;
     return Column(children: [
       Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text(_translateStat(stat['stat']['name']).tr(), style: const TextStyle(fontWeight: FontWeight.bold)), Text(val.toString(), style: const TextStyle(fontWeight: FontWeight.bold))]),
-      ClipRRect(borderRadius: BorderRadius.circular(8), child: LinearProgressIndicator(value: val / 200, backgroundColor: color.withOpacity(0.2), valueColor: AlwaysStoppedAnimation(color), minHeight: 12)),
+      ClipRRect(borderRadius: BorderRadius.circular(8), child: LinearProgressIndicator(value: val / 200, backgroundColor: color.withValues(alpha: 0.2), valueColor: AlwaysStoppedAnimation(color), minHeight: 12)),
       const SizedBox(height: 8),
     ]);
   }
@@ -318,7 +346,13 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
 
   void _onFormChanged(String name) async {
     final data = await _apiService.fetchPokemonDetails(name);
-    setState(() { _currentPokemonData = data; _currentVarietyName = name; _currentPokemonNameForEvo = name; _regionSuffixForEvo = _getRegionSuffix(); });
-    _loadAllDataForCurrentForm(); _fetchEvolutionChain();
+    setState(() { 
+      _currentPokemonData = data; 
+      _currentVarietyName = name; 
+      _currentPokemonNameForEvo = name; 
+      _regionSuffixForEvo = _getRegionSuffix(); 
+    });
+    _loadAllDataForCurrentForm(); 
+    _fetchEvolutionChain();
   }
 }
