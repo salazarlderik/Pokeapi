@@ -3,7 +3,33 @@ import 'package:flutter/material.dart';
 extension StringExtensions on String {
   String get capitalize => isNotEmpty ? '${this[0].toUpperCase()}${substring(1)}' : '';
 
-  String get cleanName => replaceAll('-', ' ').split(' ').map((w) => w.capitalize).join(' ');
+  String get cleanName {
+    String raw = toLowerCase().trim();
+
+    // 1. Casos Especiales de nombres largos
+    if (raw.contains('tauros-paldea')) {
+      if (raw.contains('combat')) return 'Paldea Tauros (Combat)';
+      if (raw.contains('blaze')) return 'Paldea Tauros (Blaze)';
+      if (raw.contains('aqua')) return 'Paldea Tauros (Aqua)';
+      return 'Paldea Tauros';
+    }
+    if (raw == 'basculin-white-striped') return 'White-Striped Basculin';
+    if (raw.contains('darmanitan-galar-standard')) return 'Galar Darmanitan';
+    if (raw.contains('darmanitan-galar-zen')) return 'Galar Darmanitan (Zen)';
+
+    // 2. Prefijos Regionales (Alola, Galar, Hisui, Paldea)
+    String prefix = "";
+    String name = raw;
+
+    if (name.contains('-alola')) { prefix = "Alola "; name = name.replaceAll('-alola', ''); }
+    else if (name.contains('-galar')) { prefix = "Galar "; name = name.replaceAll('-galar', ''); }
+    else if (name.contains('-hisui')) { prefix = "Hisui "; name = name.replaceAll('-hisui', ''); }
+    else if (name.contains('-paldea')) { prefix = "Paldea "; name = name.replaceAll('-paldea', ''); }
+
+    String cleanBase = name.replaceAll('-', ' ').split(' ').map((w) => w.capitalize).join(' ');
+    
+    return "$prefix$cleanBase".trim();
+  }
 
   Color get toTypeColor {
     switch (toLowerCase()) {
@@ -19,15 +45,12 @@ extension StringExtensions on String {
       case 'fighting': return Colors.orange;
       case 'flying': return Colors.lightBlue[300]!;
       case 'poison': return const Color(0xFF6A1B9A); 
-      case 'bug': return Colors.lightGreen[400]!; // Verde claro base para Bicho
+      case 'bug': return Colors.lightGreen[400]!;
       case 'ghost': return Colors.deepPurple;
       case 'steel': return Colors.blueGrey;
-
-      // COLORES PERSONALIZADOS
       case 'ground': return const Color(0xFFB08D57); 
       case 'rock': return const Color(0xFF6E5C4D);   
       case 'dark': return const Color(0xFF3C2D23);   
-
       default: return Colors.grey;
     }
   }

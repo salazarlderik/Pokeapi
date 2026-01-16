@@ -28,7 +28,8 @@ class EvolutionChainWidget extends StatelessWidget {
     Widget node = _buildNode(pName, context);
 
     List evos = link['evolves_to'] ?? [];
-    List filtered = EvolutionHelper.filterEvolutions(evos, base, suffix);
+    // AHORA PASAMOS currentPokemonName PARA LOS FILTROS REACTIVOS
+    List filtered = EvolutionHelper.filterEvolutions(evos, base, regionSuffix, currentPokemonName);
     
     if (filtered.isEmpty) return node;
 

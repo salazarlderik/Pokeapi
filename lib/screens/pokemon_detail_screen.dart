@@ -58,13 +58,19 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
     }
   }
 
+  // --- MÉTODO ACTUALIZADO: Identifica sufijos para activar evoluciones regionales ---
   String _getRegionSuffix() {
-    final String name = _currentPokemonNameForEvo;
-    final String species = widget.species['name'];
+    final String name = _currentPokemonNameForEvo.toLowerCase();
+    final String species = widget.species['name'].toLowerCase();
+
+    // Caso especial: Basculin Raya Blanca activa la rama de Hisui (Basculegion)
+    if (name.contains('white-striped')) return '-hisui';
+
     if (name.contains('-alola')) return '-alola';
     if (name.contains('-galar')) return '-galar';
     if (name.contains('-hisui')) return '-hisui';
     if (name.contains('-paldea') || name.startsWith('dudunsparce')) return '-paldea';
+    
     if (PokeConstants.galarianEvolutions.contains(species)) return '-galar';
     if (PokeConstants.hisuianEvolutions.contains(species)) return '-hisui';
     if (PokeConstants.paldeanEvolutions.contains(species)) return '-paldea';
@@ -163,7 +169,6 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        // --- APPBAR ESTILO TECH/ROTOM ---
         centerTitle: true,
         backgroundColor: mainColor,
         elevation: 0,
@@ -186,12 +191,18 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
               ),
             ),
             const SizedBox(width: 15),
-            Text(
-              name.toString().capitalize,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold, // Negrita
-                fontSize: 22, // Tamaño 22
-                color: Colors.white,
+            // NOMBRE DEL POKÉMON CON CLEANNAME Y AJUSTE DE TAMAÑO DINÁMICO
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  _currentPokemonData['name'].toString().cleanName,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 22,
+                    color: Colors.white,
+                  ),
+                ),
               ),
             ),
           ],
@@ -220,7 +231,8 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
               _isLoadingVarietyTypes ? const Center(child: CircularProgressIndicator()) : _buildFormSelector(mainColor),
               Hero(tag: 'pokemon-${widget.species['id']}', child: imageUrl.isEmpty ? const Icon(Icons.image_not_supported, size: 200) : Image.network(imageUrl, height: 250, fit: BoxFit.contain)),
               const SizedBox(height: 16),
-              Text(name.toString().toUpperCase(), textAlign: TextAlign.center, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              // NOMBRE DEBAJO DE LA IMAGEN LIMPIO
+              Text(name.toString().cleanName.toUpperCase(), textAlign: TextAlign.center, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
               Wrap(alignment: WrapAlignment.center, spacing: 8, children: types.map((t) => _buildTypeChip(t)).toList()),
               const SizedBox(height: 24),
               _buildStatsCard(widget.species['id'].toString(), _currentPokemonData['weight'], _currentPokemonData['height']),
