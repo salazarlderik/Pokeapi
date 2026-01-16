@@ -5,7 +5,6 @@ import '../models/pokemon_cache.dart';
 import '../main.dart';
 
 class ApiService {
-  // Obtiene los detalles de un Pokémon específico
   Future<Map<String, dynamic>> fetchPokemonDetails(String name) async {
     final cached = await isar.pokemonCaches.filter().nameEqualTo(name).findFirst();
     if (cached != null) return jsonDecode(cached.jsonData);
@@ -19,7 +18,6 @@ class ApiService {
     throw Exception('Error 404: $name no encontrado');
   }
 
-  // Obtiene la información de la especie
   Future<Map<String, dynamic>> fetchPokemonSpecies(String name) async {
     final cacheKey = "species_$name";
     final cached = await isar.pokemonCaches.filter().nameEqualTo(cacheKey).findFirst();
@@ -34,24 +32,35 @@ class ApiService {
     throw Exception('Error en Species: $name');
   }
 
-  // --- CORRECCIÓN: Resuelve el nombre real del Pokémon por defecto ---
-  Future<Map<String, dynamic>> fetchDefaultPokemonDetailsFromSpecies(String speciesName) async {
-    try {
-      // 1. Obtenemos la especie primero
-      final species = await fetchPokemonSpecies(speciesName);
-      
-      // 2. Buscamos en las variedades cuál es la 'is_default'
-      final varieties = species['varieties'] as List;
-      final defaultVar = varieties.firstWhere((v) => v['is_default'] == true, orElse: () => varieties.first);
-      final realPokemonName = defaultVar['pokemon']['name'];
+  // --- ACTUALIZADO: Ahora prioriza la variedad regional según el sufijo ---
+  // Busca esta función en tu ApiService y cámbiala por esta versión exacta:
+Future<Map<String, dynamic>> fetchDefaultPokemonDetailsFromSpecies(String speciesName, {String suffix = ""}) async {
+  try {
+    final species = await fetchPokemonSpecies(speciesName);
+    final varieties = species['varieties'] as List;
 
-      // 3. Descargamos los detalles usando el nombre real
-      return await fetchPokemonDetails(realPokemonName);
-    } catch (e) {
-      // Fallback si algo falla
-      return await fetchPokemonDetails(speciesName);
+    // Si estamos en Alola/Galar/etc, buscamos el nombre con el sufijo primero
+    if (suffix.isNotEmpty) {
+      final regionalName = "$speciesName$suffix";
+      // Intentamos buscar directamente por el nombre regional para saltar el "default" de Kanto
+      try {
+        return await fetchPokemonDetails(regionalName);
+      } catch (_) {
+        // Si falla, buscamos en la lista de variedades la que contenga el sufijo
+        final regional = varieties.firstWhere(
+          (v) => (v['pokemon']['name'] as String).contains(suffix),
+          orElse: () => null,
+        );
+        if (regional != null) return await fetchPokemonDetails(regional['pokemon']['name']);
+      }
     }
+    
+    final defaultVar = varieties.firstWhere((v) => v['is_default'] == true, orElse: () => varieties.first);
+    return await fetchPokemonDetails(defaultVar['pokemon']['name']);
+  } catch (e) {
+    return await fetchPokemonDetails(speciesName);
   }
+}
 
   Future<List<dynamic>> fetchGenerationEntries(int id) async {
     final response = await http.get(Uri.parse('https://pokeapi.co/api/v2/generation/$id'));

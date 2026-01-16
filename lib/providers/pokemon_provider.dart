@@ -9,6 +9,10 @@ class PokemonProvider extends ChangeNotifier {
   String _searchQuery = "";
   String? _selectedType;
   final Map<String, List<String>> _pokemonTypesMap = {};
+  
+  // NUEVO: Guardamos el sufijo de la región actual
+  String _currentRegionSuffix = "";
+  String get currentRegionSuffix => _currentRegionSuffix;
 
   bool _isLoading = true;
   bool get isLoading => _isLoading;
@@ -36,6 +40,13 @@ class PokemonProvider extends ChangeNotifier {
   }
 
   PokemonProvider({required int generationId, String? regionFilter}) {
+    // Definimos el sufijo según la entrada
+    if (regionFilter == 'galar') _currentRegionSuffix = '-galar';
+    else if (regionFilter == 'hisui') _currentRegionSuffix = '-hisui';
+    else if (generationId == 7) _currentRegionSuffix = '-alola';
+    else if (generationId == 9) _currentRegionSuffix = '-paldea';
+    else _currentRegionSuffix = '';
+
     fetchGeneration(generationId, regionFilter: regionFilter);
   }
 
@@ -45,13 +56,11 @@ class PokemonProvider extends ChangeNotifier {
     super.dispose();
   }
 
-  // PROTECCIÓN CLAVE: Solo notifica si el provider sigue vivo
   @override
   void notifyListeners() {
     if (!_isDisposed) super.notifyListeners();
   }
 
-  // MÉTODO SOLICITADO: Reinicio total
   void resetToDefault() {
     _selectedType = null;
     _searchQuery = "";
@@ -89,9 +98,13 @@ class PokemonProvider extends ChangeNotifier {
 
   Future<void> _loadTypesInBackground() async {
     for (var p in _allPokemon) {
-      if (_isDisposed) return; // Detener si se cerró la pantalla
+      if (_isDisposed) return;
       try {
-        final d = await _apiService.fetchDefaultPokemonDetailsFromSpecies(p['name']);
+        // ACTUALIZADO: Usamos el sufijo para cargar los tipos regionales
+        final d = await _apiService.fetchDefaultPokemonDetailsFromSpecies(
+          p['name'], 
+          suffix: _currentRegionSuffix
+        );
         if (_isDisposed) return;
         _pokemonTypesMap[p['name']] = (d['types'] as List).map((t) => t['type']['name'] as String).toList();
       } catch (_) {}

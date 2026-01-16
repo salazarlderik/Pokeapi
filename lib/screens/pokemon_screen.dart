@@ -158,7 +158,6 @@ class _PokemonScreenState extends State<PokemonScreen> {
 
     return GridView.builder(
       controller: _scrollController,
-      // La Key asegura que Flutter no intente reciclar la Grid vieja
       key: ValueKey('grid_${provider.selectedType}_${provider.searchQuery}'),
       padding: const EdgeInsets.all(12),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -172,6 +171,7 @@ class _PokemonScreenState extends State<PokemonScreen> {
         return PokemonListCard(
           key: ValueKey(pokemonList[index]['name']),
           pokemonSpecies: pokemonList[index], 
+          suffix: provider.currentRegionSuffix, // PASAMOS EL SUFIJO AQUÍ
         );
       },
     );

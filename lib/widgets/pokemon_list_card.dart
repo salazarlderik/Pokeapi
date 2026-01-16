@@ -7,7 +7,9 @@ import '../utils/pokemon_extensions.dart';
 
 class PokemonListCard extends StatefulWidget {
   final Map<String, dynamic> pokemonSpecies; 
-  const PokemonListCard({super.key, required this.pokemonSpecies});
+  final String suffix; // NUEVO
+  
+  const PokemonListCard({super.key, required this.pokemonSpecies, this.suffix = ""});
 
   @override
   State<PokemonListCard> createState() => _PokemonListCardState();
@@ -22,7 +24,11 @@ class _PokemonListCardState extends State<PokemonListCard> {
     super.initState();
     _dataFuture = Future.wait([
       _apiService.fetchPokemonSpecies(widget.pokemonSpecies['name']),
-      _apiService.fetchDefaultPokemonDetailsFromSpecies(widget.pokemonSpecies['name']),
+      // ACTUALIZADO: Pasamos el sufijo para obtener los datos correctos
+      _apiService.fetchDefaultPokemonDetailsFromSpecies(
+        widget.pokemonSpecies['name'], 
+        suffix: widget.suffix
+      ),
     ]);
   }
 
@@ -40,23 +46,13 @@ class _PokemonListCardState extends State<PokemonListCard> {
         final String firstType = types.first.toLowerCase();
         final Color mainColor = firstType.toTypeColor;
 
-        // --- JERARQUÍA DE OPACIDADES ACTUALIZADA ---
-        double backgroundOpacity = 0.15; // Planta, Psíquico y Normal
-
-        if (firstType == 'rock' ) {
-          backgroundOpacity = 0.48; // Los más fuertes y oscuros
-        } else if (firstType == 'fairy') {
-          backgroundOpacity = 0.25; // Hada potente
-        } else if (firstType == 'bug') {
-          backgroundOpacity = 0.40; // BICHO: El más claro de la tarjeta
-        } else if (firstType == 'ice') {
-          backgroundOpacity = 0.30;}
-          else if (firstType == 'poison') {
-          backgroundOpacity = 0.30;}
-          else if (firstType == 'flying') {
-          backgroundOpacity = 0.60;}
-          else if (firstType == 'dark') {
-          backgroundOpacity = 0.10;}
+        double backgroundOpacity = 0.15;
+        if (firstType == 'rock') backgroundOpacity = 0.48;
+        else if (firstType == 'fairy') backgroundOpacity = 0.25;
+        else if (firstType == 'bug') backgroundOpacity = 0.40;
+        else if (firstType == 'ice' || firstType == 'poison') backgroundOpacity = 0.30;
+        else if (firstType == 'flying') backgroundOpacity = 0.60;
+        else if (firstType == 'dark') backgroundOpacity = 0.10;
         
         final varieties = species['varieties'] as List;
         final hasMega = varieties.any((v) => (v['pokemon']['name'] as String).contains('-mega'));
@@ -70,7 +66,6 @@ class _PokemonListCardState extends State<PokemonListCard> {
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => PokemonDetailScreen(pokemon: pokemon, species: species))),
             child: Stack(
               children: [
-                // Resplandor trasero (Ajustado según opacidad de la tarjeta)
                 Positioned(
                   top: -10, right: -10,
                   child: Container(
@@ -86,11 +81,8 @@ class _PokemonListCardState extends State<PokemonListCard> {
                     ),
                   ),
                 ),
-                
-                // Iconos Mega/Gmax (Tamaño 25 y margen 10)
                 if (hasMega) Positioned(top: 10, right: 10, child: Image.asset('assets/images/piedra_activadora.png', width: 25)),
                 if (hasGmax) Positioned(top: 10, left: 10, child: Image.asset('assets/images/gmax_logo.png', width: 25)),
-                
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -135,14 +127,8 @@ class _PokemonListCardState extends State<PokemonListCard> {
   Widget _buildTypeChip(String type) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: type.toTypeColor,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        'types.$type'.tr().toUpperCase(), 
-        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)
-      ),
+      decoration: BoxDecoration(color: type.toTypeColor, borderRadius: BorderRadius.circular(8)),
+      child: Text('types.$type'.tr().toUpperCase(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)),
     );
   }
 }

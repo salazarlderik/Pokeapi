@@ -23,6 +23,7 @@ class EvolutionChainWidget extends StatelessWidget {
 
   Widget _buildBranch(Map<String, dynamic> link, String suffix, BuildContext context) {
     String base = link['species']['name'];
+    // Obtenemos el nombre del nodo actual (ej: sandshrew-alola)
     String pName = EvolutionHelper.getEvoNodeName(base, suffix);
     Widget node = _buildNode(pName, context);
 
@@ -38,12 +39,14 @@ class EvolutionChainWidget extends StatelessWidget {
         Column(
           mainAxisSize: MainAxisSize.min,
           children: filtered.map((e) {
-            // Obtenemos el nombre real de la evolución (ej: sandslash-alola)
+            // --- CAMBIO SOLICITADO: OBTENCIÓN DEL NOMBRE DESTINO CORRECTO ---
+            // Esto permite que el Helper sepa que la evolución es, por ejemplo, 'sandslash-alola'
             String targetEvoName = EvolutionHelper.getEvoNodeName(e['species']['name'], suffix);
             
             return Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // Pasamos el targetEvoName para que la lógica de 'Ice Stone' se active
                 _buildArrow(EvolutionHelper.formatEvoDetails(e['evolution_details'], targetEvoName)),
                 _buildBranch(e, suffix, context),
               ],
@@ -55,7 +58,7 @@ class EvolutionChainWidget extends StatelessWidget {
   }
 
   Widget _buildArrow(String text) => Container(
-    width: 90,
+    width: 100,
     padding: const EdgeInsets.symmetric(horizontal: 4),
     child: Column(
       mainAxisSize: MainAxisSize.min,
@@ -63,7 +66,11 @@ class EvolutionChainWidget extends StatelessWidget {
         const Icon(Icons.arrow_forward, color: Colors.grey, size: 20), 
         Text(
           text, 
-          style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.black87), 
+          style: const TextStyle(
+            fontSize: 8, 
+            fontWeight: FontWeight.bold, 
+            color: Colors.black87
+          ), 
           textAlign: TextAlign.center
         )
       ],
@@ -73,9 +80,18 @@ class EvolutionChainWidget extends StatelessWidget {
   Widget _buildNode(String name, BuildContext context) {
     final api = ApiService();
     return FutureBuilder<Map<String, dynamic>>(
-      future: name.contains('-') ? api.fetchPokemonDetails(name) : api.fetchDefaultPokemonDetailsFromSpecies(name),
+      // Si el nombre ya contiene el sufijo, pedimos los detalles directos
+      future: name.contains('-') 
+          ? api.fetchPokemonDetails(name) 
+          : api.fetchDefaultPokemonDetailsFromSpecies(name),
       builder: (context, snap) {
-        if (!snap.hasData) return const SizedBox(width: 80, height: 100, child: Center(child: CircularProgressIndicator(strokeWidth: 2)));
+        if (!snap.hasData) {
+          return const SizedBox(
+            width: 80, 
+            height: 100, 
+            child: Center(child: CircularProgressIndicator(strokeWidth: 2))
+          );
+        }
         
         final data = snap.data!;
         final color = (data['types'] as List).first['type']['name'].toString().toTypeColor;
@@ -83,31 +99,57 @@ class EvolutionChainWidget extends StatelessWidget {
 
         return GestureDetector(
           onTap: isCur ? null : () async {
-            showDialog(context: context, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator()));
-            final s = await api.fetchPokemonSpecies(data['name']);
-            final p = await api.fetchPokemonDetails(data['name']);
-            if (!context.mounted) return;
-            Navigator.pop(context);
-            Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => PokemonDetailScreen(pokemon: p, species: s)));
+            // Mostrar carga mientras navegamos
+            showDialog(
+              context: context, 
+              barrierDismissible: false, 
+              builder: (_) => const Center(child: CircularProgressIndicator())
+            );
+            
+            try {
+              final s = await api.fetchPokemonSpecies(data['name']);
+              final p = await api.fetchPokemonDetails(data['name']);
+              
+              if (!context.mounted) return;
+              Navigator.pop(context); // Quitar indicador de carga
+              
+              // Navegación limpia reemplazando la actual
+              Navigator.pushReplacement(
+                context, 
+                MaterialPageRoute(
+                  builder: (_) => PokemonDetailScreen(pokemon: p, species: s)
+                )
+              );
+            } catch (e) {
+              if (context.mounted) Navigator.pop(context);
+            }
           },
           child: Container(
-            width: 100,
+            width: 90,
             padding: const EdgeInsets.all(8),
             margin: const EdgeInsets.all(4),
             decoration: BoxDecoration(
+              // Usamos withValues para consistencia con Flutter moderno
               color: isCur ? color.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.5), 
-              border: Border.all(color: isCur ? color : Colors.grey.shade300, width: 2), 
+              border: Border.all(
+                color: isCur ? color : Colors.grey.shade300, 
+                width: 2
+              ), 
               borderRadius: BorderRadius.circular(12)
             ),
             child: Column(
               children: [
-                Image.network(data['sprites']['front_default'] ?? '', height: 60, fit: BoxFit.contain),
-                const SizedBox(height: 4),
+                Image.network(
+                  data['sprites']['front_default'] ?? '', 
+                  height: 60, 
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => const Icon(Icons.help_outline, size: 40),
+                ),
                 Text(
                   data['name'].toString().cleanName, 
                   style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold), 
                   textAlign: TextAlign.center,
-                  maxLines: 2,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 )
               ],
