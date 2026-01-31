@@ -41,25 +41,30 @@ class EvolutionChainWidget extends StatelessWidget {
 
     return Row(
       mainAxisSize: MainAxisSize.min,
-      // ALINEACIÓN VERTICAL CENTRAL PARA TODA LA FILA
       crossAxisAlignment: CrossAxisAlignment.center, 
       children: [
         node,
         Column(
           mainAxisSize: MainAxisSize.min,
-          // AQUÍ ESTÁ EL ARREGLO DE ALINEACIÓN PARA APPLIN
           mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
+          // --- CAMBIO CLAVE AQUÍ: 'start' ---
+          // Al usar 'start', forzamos a que Flapple, Appletun y Dipplin
+          // comiencen exactamente en el mismo eje vertical izquierdo,
+          // ignorando que la rama de Dipplin sea más larga por Hydrapple.
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: filtered.map((e) {
             String targetEvoName = e['species']['name'];
             
-            return Row(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                _buildArrow(EvolutionHelper.formatEvoDetails(e['evolution_details'], targetEvoName, suffix)),
-                _buildBranch(e, suffix, context),
-              ],
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20.0), 
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  _buildArrow(EvolutionHelper.formatEvoDetails(e['evolution_details'], targetEvoName, suffix)),
+                  _buildBranch(e, suffix, context),
+                ],
+              ),
             );
           }).toList(),
         ),
@@ -68,7 +73,7 @@ class EvolutionChainWidget extends StatelessWidget {
   }
 
   Widget _buildArrow(String text) => Container(
-    width: 100,
+    width: 110, 
     padding: const EdgeInsets.symmetric(horizontal: 4),
     child: Column(
       mainAxisSize: MainAxisSize.min,
@@ -76,7 +81,7 @@ class EvolutionChainWidget extends StatelessWidget {
         const Icon(Icons.arrow_forward, color: Colors.grey, size: 20), 
         Text(
           text, 
-          style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.black87), 
+          style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.black87), 
           textAlign: TextAlign.center
         )
       ],

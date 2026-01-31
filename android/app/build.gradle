@@ -7,7 +7,10 @@ plugins {
 android {
     // Definimos el namespace para tu app principal
     namespace = "com.example.pokeapi_app"
-    compileSdk = flutter.compileSdkVersion
+    
+    // CAMBIO 1: Forzamos la versión de compilación a 34
+    compileSdk = 34 
+    
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -22,10 +25,12 @@ android {
     defaultConfig {
         applicationId = "com.example.pokeapi_app"
         
-        // Isar requiere como mínimo la versión 21
+        // Isar requiere como mínimo la versión 21 (puedes dejarlo en 21 o subirlo a 23 si da guerra)
         minSdk = 21 
         
-        targetSdk = flutter.targetSdkVersion
+        // CAMBIO 2: Forzamos el target a 34
+        targetSdk = 34
+        
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }

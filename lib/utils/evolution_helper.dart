@@ -100,9 +100,12 @@ class EvolutionHelper {
     'darmanitan-galar-standard': 'Ice Stone',
     'darmanitan-galar-zen': 'Use Zen Mode',
     
-    // KUBFU
+    // CORREGIDO: KUBFU AHORA MENCIONA AMBAS TORRES
+    // Si la API detecta el item específico:
     'urshifu-single-strike': 'Scroll of Darkness (Tower of Darkness)',
     'urshifu-rapid-strike': 'Scroll of Waters (Tower of Waters)',
+    // Fallback por si la API solo manda "Urshifu":
+    'urshifu': 'Tower of Darkness OR Tower of Waters',
     
     // HISUI
     'electrode-hisui': 'Leaf Stone',
@@ -121,8 +124,7 @@ class EvolutionHelper {
     'samurott-hisui': 'Lvl 36 (Hisui)',
     'lilligant-hisui': 'Sun Stone',
 
-    // PALDEA (GEN 9) - TEXTOS FORZADOS
-    // IMPORTANTE: Estos deben coincidir con el nombre de la especie
+    // PALDEA (GEN 9)
     'dipplin': 'Use Syrupy Apple',
     'hydrapple': 'Lvl Up knowing Dragon Cheer',
     'sinistcha': 'Use Unremarkable or Masterpiece Teacup', 
@@ -170,7 +172,7 @@ class EvolutionHelper {
     
     final cName = currentName.toLowerCase();
 
-    // 1. ROCKRUFF MULTIRAMA
+    // 1. ROCKRUFF
     if (base == 'rockruff') {
       for (var e in evos) {
         final details = e['evolution_details'] as List;
@@ -184,20 +186,16 @@ class EvolutionHelper {
       return evos; 
     }
 
-    // --- NUEVO: KUBFU (Detectar item para renombrar y usar Override) ---
+    // 2. KUBFU - Intentar separar por items
     if (base == 'kubfu') {
       for (var e in evos) {
         final details = e['evolution_details'] as List;
-        // Si no hay detalles, asumimos por orden (hack para API rota a veces)
         if (details.isNotEmpty) {
            final item = details.first['item']?['name'] ?? "";
            if (item == 'scroll-of-darkness') e['species']['name'] = 'urshifu-single-strike';
            if (item == 'scroll-of-waters') e['species']['name'] = 'urshifu-rapid-strike';
-        } else {
-           // Fallback si la API no manda items: renombramos basado en el nombre original
-           // Generalmente urshifu a secas es Single Strike en la API por defecto
-           if (e['species']['name'] == 'urshifu') e['species']['name'] = 'urshifu-single-strike';
-        }
+        } 
+        // Si no tiene items, se queda como "urshifu" y usará el Override genérico
       }
     }
 
@@ -254,7 +252,6 @@ class EvolutionHelper {
         return suffix == '-galar' ? name == 'runerigus' : name == 'cofagrigus';
       }
       
-      // Splits regionales
       if (base == 'scyther') return suffix == '-hisui' ? name == 'kleavor' : name == 'scizor';
       if (base == 'goomy') return suffix == '-hisui' ? name == 'sliggoo' : name == 'sliggoo'; 
       if (base == 'dartrix') return suffix == '-hisui' ? name == 'decidueye' : name == 'decidueye';
@@ -269,7 +266,6 @@ class EvolutionHelper {
       if (base == 'sneasel') return suffix == '-hisui' ? name == 'sneasler' : name == 'weavile';
       if (base == 'qwilfish') return suffix == '-hisui' && name == 'overqwil';
 
-      // Lista blanca
       if (['melmetal', 'ursaluna', 'wyrdeer', 'kleavor', 'annihilape', 'farigiraf', 'dudunsparce', 
            'kingambit', 'basculegion', 'runerigus', 'overqwil', 'archaludon', 'dipplin', 
            'hydrapple', 'pawmot', 'maushold', 'brambleghast', 'rabsca', 'palafin', 
@@ -292,8 +288,7 @@ class EvolutionHelper {
   static String formatEvoDetails(List details, String to, String currentSuffix) {
     String target = to.toLowerCase();
 
-    // 1. CHECK MANUAL (MOVIDO AL PRINCIPIO): 
-    // Esto asegura que Archaludon, Sinistcha, etc. tengan texto aunque 'details' esté vacío
+    // 1. CHECK MANUAL (Primero)
     if (_manualOverrides.containsKey(target)) {
       return _manualOverrides[target]!;
     }
@@ -304,7 +299,6 @@ class EvolutionHelper {
       }
     }
 
-    // AHORA sí chequeamos si está vacío
     if (details.isEmpty) return "";
 
     // 2. SELECCIÓN INTELIGENTE
