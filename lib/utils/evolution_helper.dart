@@ -5,19 +5,19 @@ import 'pokemon_constants.dart';
 class EvolutionHelper {
   // --- MAPA DE SEGURIDAD (OVERRIDES MANUALES) ---
   static const Map<String, String> _manualOverrides = {
-    // --- KANTO / JOHTO ---
+    // KANTO / JOHTO
     'pichu': 'Friendship',
     'cleffa': 'Friendship',
     'igglybuff': 'Friendship',
-    'golbat': 'Lvl 22', // Zubat -> Golbat (Nivel)
-    'crobat': 'Friendship', // Golbat -> Crobat (Amistad)
-    'chansey': 'Lvl Up holding Oval Stone (Day)', // Happiny -> Chansey
-    'blissey': 'Friendship', // Chansey -> Blissey
+    'golbat': 'Lvl 22', 
+    'crobat': 'Friendship',
+    'chansey': 'Lvl Up holding Oval Stone (Day)', 
+    'blissey': 'Friendship',
     'munchlax': 'Friendship',
-    'lucario': 'Friendship (Day)', // Riolu -> Lucario
-    'riolu': 'Hatch Egg', 
+    'lucario': 'Friendship (High)', 
+    'riolu': 'Friendship (High)', 
 
-    // Intercambios especiales
+    // Intercambios
     'slowking': 'Trade + King\'s Rock',
     'politoed': 'Trade + King\'s Rock',
     'steelix': 'Trade + Metal Coat',
@@ -29,21 +29,21 @@ class EvolutionHelper {
     'gorebyss': 'Trade + Deep Sea Scale',
     'milotic': 'Trade + Prism Scale (or High Beauty)',
     
-    // Casos especiales Kanto/Johto
+    // Especiales
     'mantine': 'Lvl Up with Remoraid in party',
     'shedinja': 'Lvl 20 + Empty Slot & Poké Ball',
     'hitmontop': 'Lvl 20 (Atk = Def)',
     'hitmonlee': 'Lvl 20 (Atk > Def)',
     'hitmonchan': 'Lvl 20 (Def > Atk)',
 
-    // --- HOENN (Wurmple y Nincada) ---
+    // HOENN
     'silcoon': 'Lvl 7 (Random Personality)',
     'cascoon': 'Lvl 7 (Random Personality)',
     'beautifly': 'Lvl 10',
     'dustox': 'Lvl 10',
     'ninjask': 'Lvl 20',
 
-    // --- SINNOH (Combee, Burmy, etc) ---
+    // SINNOH
     'vespiquen': 'Lvl 21 (Female only)',
     'mothim': 'Lvl 20 (Male only)',
     'wormadam': 'Lvl 20 (Female only)',
@@ -59,7 +59,7 @@ class EvolutionHelper {
     'froslass': 'Dawn Stone (Female only)',
     'rotom': 'Change appliance',
     
-    // --- KALOS ---
+    // KALOS
     'pangoro': 'Lvl 32 + Dark-type in party',
     'malamar': 'Lvl 30 + Turn device upside down',
     'sylveon': 'Friendship + Fairy Move',
@@ -67,7 +67,7 @@ class EvolutionHelper {
     'aurorus': 'Lvl 39 (Night)',
     'tyrantrum': 'Lvl 39 (Day)',
 
-    // --- ALOLA (GEN 7) ---
+    // ALOLA
     'persian-alola': 'Friendship (High)', 
     'raticate-alola': 'Lvl 20 (Night)',
     'raichu-alola': 'Thunder Stone (in Alola)',
@@ -81,7 +81,7 @@ class EvolutionHelper {
     'solgaleo': 'Lvl 53 (Sun / Sword)',
     'lunala': 'Lvl 53 (Moon / Shield)',
 
-    // --- GALAR (GEN 8) ---
+    // GALAR
     'appletun': 'Use Sweet Apple',
     'flapple': 'Use Tart Apple',
     'slowbro-galar': 'Use Galarica Cuff',
@@ -99,11 +99,12 @@ class EvolutionHelper {
     'alcremie': 'Spin holding Sweet',
     'darmanitan-galar-standard': 'Ice Stone',
     'darmanitan-galar-zen': 'Use Zen Mode',
-    // Kubfu
+    
+    // KUBFU
     'urshifu-single-strike': 'Scroll of Darkness (Tower of Darkness)',
     'urshifu-rapid-strike': 'Scroll of Waters (Tower of Waters)',
     
-    // --- HISUI (GEN 8) ---
+    // HISUI
     'electrode-hisui': 'Leaf Stone',
     'kleavor': 'Black Augurite',
     'ursaluna': 'Peat Block (Full Moon)',
@@ -120,16 +121,12 @@ class EvolutionHelper {
     'samurott-hisui': 'Lvl 36 (Hisui)',
     'lilligant-hisui': 'Sun Stone',
 
-    // --- PALDEA (GEN 9) ---
-    // Applin line
+    // PALDEA (GEN 9) - TEXTOS FORZADOS
+    // IMPORTANTE: Estos deben coincidir con el nombre de la especie
     'dipplin': 'Use Syrupy Apple',
     'hydrapple': 'Lvl Up knowing Dragon Cheer',
-    
-    // Poltchageist
-    'sinistcha': 'Use Unremarkable or Masterpiece Teacup',
-
-    // Duraludon
-    'archaludon': 'Use Metal Alloy',
+    'sinistcha': 'Use Unremarkable or Masterpiece Teacup', 
+    'archaludon': 'Use Metal Alloy', 
 
     'annihilape': 'Use Rage Fist 20 times',
     'kingambit': 'Defeat 3 Bisharp leaders',
@@ -169,12 +166,11 @@ class EvolutionHelper {
   }
 
   static List filterEvolutions(List evos, String base, String suffix, String currentName) {
-    // 1. AISLAMIENTO MANAPHY / PHIONE
     if (base == 'manaphy' || base == 'phione') return [];
     
     final cName = currentName.toLowerCase();
 
-    // 2. ROCKRUFF MULTIRAMA
+    // 1. ROCKRUFF MULTIRAMA
     if (base == 'rockruff') {
       for (var e in evos) {
         final details = e['evolution_details'] as List;
@@ -188,7 +184,24 @@ class EvolutionHelper {
       return evos; 
     }
 
-    // --- LÓGICA ESPECIAL SLOWPOKE (Galar vs Kanto) ---
+    // --- NUEVO: KUBFU (Detectar item para renombrar y usar Override) ---
+    if (base == 'kubfu') {
+      for (var e in evos) {
+        final details = e['evolution_details'] as List;
+        // Si no hay detalles, asumimos por orden (hack para API rota a veces)
+        if (details.isNotEmpty) {
+           final item = details.first['item']?['name'] ?? "";
+           if (item == 'scroll-of-darkness') e['species']['name'] = 'urshifu-single-strike';
+           if (item == 'scroll-of-waters') e['species']['name'] = 'urshifu-rapid-strike';
+        } else {
+           // Fallback si la API no manda items: renombramos basado en el nombre original
+           // Generalmente urshifu a secas es Single Strike en la API por defecto
+           if (e['species']['name'] == 'urshifu') e['species']['name'] = 'urshifu-single-strike';
+        }
+      }
+    }
+
+    // SLOWPOKE GALAR
     if (base == 'slowpoke') {
        if (suffix == '-galar') {
          for (var e in evos) {
@@ -202,7 +215,7 @@ class EvolutionHelper {
        }
     }
 
-    // --- LÓGICA ESPECIAL ALOLA ---
+    // ALOLA FORCED
     if (suffix == '-alola') {
        if (base == 'pikachu') {
          for (var e in evos) if (e['species']['name'] == 'raichu') e['species']['name'] = 'raichu-alola';
@@ -215,7 +228,7 @@ class EvolutionHelper {
        }
     }
 
-    // --- LÓGICA ESPECIAL GALAR ---
+    // GALAR FORCED
     if (suffix == '-galar') {
        if (base == 'koffing') {
          for (var e in evos) if (e['species']['name'] == 'weezing') e['species']['name'] = 'weezing-galar';
@@ -225,7 +238,7 @@ class EvolutionHelper {
        }
     }
 
-    // 3. INYECCIÓN MELTAN
+    // MELTAN
     if (base == 'meltan' && evos.isEmpty) {
       return [{
         'species': {'name': 'melmetal'},
@@ -237,26 +250,18 @@ class EvolutionHelper {
     return evos.where((e) {
       String name = e['species']['name'].toLowerCase();
 
-      // 4. FILTROS DE RAMAS
       if (base == 'yamask') {
         return suffix == '-galar' ? name == 'runerigus' : name == 'cofagrigus';
       }
       
-      // Split Scyther / Kleavor
+      // Splits regionales
       if (base == 'scyther') return suffix == '-hisui' ? name == 'kleavor' : name == 'scizor';
-      // Split Goomy
       if (base == 'goomy') return suffix == '-hisui' ? name == 'sliggoo' : name == 'sliggoo'; 
-      // Split Dartrix
       if (base == 'dartrix') return suffix == '-hisui' ? name == 'decidueye' : name == 'decidueye';
-      // Split Quilava
       if (base == 'quilava') return suffix == '-hisui' ? name == 'typhlosion' : name == 'typhlosion';
-      // Split Dewott
       if (base == 'dewott') return suffix == '-hisui' ? name == 'samurott' : name == 'samurott';
-      // Split Petilil
       if (base == 'petilil') return suffix == '-hisui' ? name == 'lilligant' : name == 'lilligant';
-      // Split Rufflet
       if (base == 'rufflet') return suffix == '-hisui' ? name == 'braviary' : name == 'braviary';
-      // Split Bergmite
       if (base == 'bergmite') return suffix == '-hisui' ? name == 'avalugg' : name == 'avalugg';
 
       if (base == 'basculin') return cName.contains('white-striped') && name == 'basculegion';
@@ -264,13 +269,12 @@ class EvolutionHelper {
       if (base == 'sneasel') return suffix == '-hisui' ? name == 'sneasler' : name == 'weavile';
       if (base == 'qwilfish') return suffix == '-hisui' && name == 'overqwil';
 
-      // Permitir evoluciones especiales nuevas
+      // Lista blanca
       if (['melmetal', 'ursaluna', 'wyrdeer', 'kleavor', 'annihilape', 'farigiraf', 'dudunsparce', 
            'kingambit', 'basculegion', 'runerigus', 'overqwil', 'archaludon', 'dipplin', 
            'hydrapple', 'pawmot', 'maushold', 'brambleghast', 'rabsca', 'palafin', 
-           'gholdengo', 'sinistcha'].contains(name)) return true;
+           'gholdengo', 'sinistcha', 'urshifu-single-strike', 'urshifu-rapid-strike'].contains(name)) return true;
 
-      // Si tiene sufijo galar/hisui/paldea, debe pasar
       if (name.contains('-galar') || name.contains('galar')) return true;
       if (name.contains('-hisui')) return true;
       if (name.contains('-paldea')) return true;
@@ -286,22 +290,24 @@ class EvolutionHelper {
   }
 
   static String formatEvoDetails(List details, String to, String currentSuffix) {
-    if (details.isEmpty) return "";
     String target = to.toLowerCase();
 
-    // 1. CHECK MANUAL: Prioridad absoluta al mapa manual
+    // 1. CHECK MANUAL (MOVIDO AL PRINCIPIO): 
+    // Esto asegura que Archaludon, Sinistcha, etc. tengan texto aunque 'details' esté vacío
     if (_manualOverrides.containsKey(target)) {
       return _manualOverrides[target]!;
     }
-    // Caso especial para formas regionales cuyo "target" en la API no tiene sufijo
     if (currentSuffix.isNotEmpty) {
-      final overrideKey = "$target$currentSuffix"; // ej: slowbro-galar
+      final overrideKey = "$target$currentSuffix"; 
       if (_manualOverrides.containsKey(overrideKey)) {
         return _manualOverrides[overrideKey]!;
       }
     }
 
-    // 2. SELECCIÓN INTELIGENTE DE DETALLES
+    // AHORA sí chequeamos si está vacío
+    if (details.isEmpty) return "";
+
+    // 2. SELECCIÓN INTELIGENTE
     Map<String, dynamic> selectedDetail = details.first; 
 
     if (details.length > 1) {
@@ -327,7 +333,6 @@ class EvolutionHelper {
       }
     }
 
-    // Lógica para Gallade/Froslass (Género)
     if (target.contains('gallade')) {
        var d = details.firstWhere((d) => d['gender'] == 2, orElse: () => selectedDetail);
        selectedDetail = d;
@@ -348,17 +353,14 @@ class EvolutionHelper {
     final minAffection = selectedDetail['min_affection'];
     final location = selectedDetail['location'];
 
-    // Trades
     if (trigger == 'trade') {
       if (heldItem != null) return "Trade + ${heldItem['name'].toString().cleanName}";
       if (target.contains('accelgor') || target.contains('escavalier')) return "Trade for Karrablast/Shelmet";
       return "Trade";
     }
 
-    // Items
     if (item != null) return item['name'].toString().cleanName;
 
-    // Level Up conditions
     if (trigger == 'level-up') {
       List<String> conditions = [];
 
@@ -368,14 +370,12 @@ class EvolutionHelper {
       if (minHappy != null) conditions.add("Friendship");
       if (minAffection != null) conditions.add("Affection");
       
-      // SOLUCIÓN DEL ERROR DEL PANTALLAZO:
       if (timeOfDay.isNotEmpty) conditions.add("(${timeOfDay.capitalize})");
       
       if (location != null) conditions.add("near ${location['name'].toString().cleanName}");
       if (heldItem != null) conditions.add("holding ${heldItem['name'].toString().cleanName}");
       if (knownMove != null) conditions.add("knows ${knownMove['name'].toString().cleanName}");
       
-      // Casos Tyrogue
       if (target.contains('hitmonlee')) conditions.add("(Atk > Def)");
       if (target.contains('hitmonchan')) conditions.add("(Def > Atk)");
       if (target.contains('hitmontop')) conditions.add("(Atk = Def)");
@@ -384,7 +384,6 @@ class EvolutionHelper {
       return conditions.join(" ");
     }
     
-    // Shedinja fallback
     if (target == 'shedinja') return "Lvl 20 (Empty Slot & Poké Ball)";
 
     return trigger.toString().cleanName.capitalize;

@@ -24,7 +24,7 @@ class EvolutionChainWidget extends StatelessWidget {
   Widget _buildBranch(Map<String, dynamic> link, String suffix, BuildContext context) {
     String base = link['species']['name'];
     
-    // Sincronización para Lycanroc en el nodo base
+    // Sincronización para Lycanroc
     String pName = EvolutionHelper.getEvoNodeName(base, suffix);
     if (base == 'lycanroc') {
       if (currentPokemonName.contains('midnight')) pName = 'lycanroc-midnight';
@@ -35,24 +35,28 @@ class EvolutionChainWidget extends StatelessWidget {
     Widget node = _buildNode(pName, context);
     List evos = link['evolves_to'] ?? [];
     
-    // FILTRO MULTIRAMA: Devolverá las 3 rutas para Rockruff juntas
     List filtered = EvolutionHelper.filterEvolutions(evos, base, suffix, currentPokemonName);
     
     if (filtered.isEmpty) return node;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
+      // ALINEACIÓN VERTICAL CENTRAL PARA TODA LA FILA
+      crossAxisAlignment: CrossAxisAlignment.center, 
       children: [
         node,
         Column(
           mainAxisSize: MainAxisSize.min,
+          // AQUÍ ESTÁ EL ARREGLO DE ALINEACIÓN PARA APPLIN
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: filtered.map((e) {
             String targetEvoName = e['species']['name'];
             
             return Row(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // CAMBIO AQUÍ: Se pasa 'suffix' como tercer argumento
                 _buildArrow(EvolutionHelper.formatEvoDetails(e['evolution_details'], targetEvoName, suffix)),
                 _buildBranch(e, suffix, context),
               ],
