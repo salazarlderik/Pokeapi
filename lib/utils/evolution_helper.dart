@@ -1,8 +1,153 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'pokemon_constants.dart';
 import 'pokemon_extensions.dart';
+import 'pokemon_constants.dart';
 
 class EvolutionHelper {
+  // --- MAPA DE SEGURIDAD (OVERRIDES MANUALES) ---
+  static const Map<String, String> _manualOverrides = {
+    // --- KANTO / JOHTO ---
+    'pichu': 'Friendship',
+    'cleffa': 'Friendship',
+    'igglybuff': 'Friendship',
+    'golbat': 'Lvl 22', // Zubat -> Golbat (Nivel)
+    'crobat': 'Friendship', // Golbat -> Crobat (Amistad)
+    'chansey': 'Lvl Up holding Oval Stone (Day)', // Happiny -> Chansey
+    'blissey': 'Friendship', // Chansey -> Blissey
+    'munchlax': 'Friendship',
+    'lucario': 'Friendship (Day)', // Riolu -> Lucario
+    'riolu': 'Hatch Egg', 
+
+    // Intercambios especiales
+    'slowking': 'Trade + King\'s Rock',
+    'politoed': 'Trade + King\'s Rock',
+    'steelix': 'Trade + Metal Coat',
+    'scizor': 'Trade + Metal Coat',
+    'kingdra': 'Trade + Dragon Scale',
+    'porygon2': 'Trade + Upgrade',
+    'porygon-z': 'Trade + Dubious Disc',
+    'huntail': 'Trade + Deep Sea Tooth',
+    'gorebyss': 'Trade + Deep Sea Scale',
+    'milotic': 'Trade + Prism Scale (or High Beauty)',
+    
+    // Casos especiales Kanto/Johto
+    'mantine': 'Lvl Up with Remoraid in party',
+    'shedinja': 'Lvl 20 + Empty Slot & Poké Ball',
+    'hitmontop': 'Lvl 20 (Atk = Def)',
+    'hitmonlee': 'Lvl 20 (Atk > Def)',
+    'hitmonchan': 'Lvl 20 (Def > Atk)',
+
+    // --- HOENN (Wurmple y Nincada) ---
+    'silcoon': 'Lvl 7 (Random Personality)',
+    'cascoon': 'Lvl 7 (Random Personality)',
+    'beautifly': 'Lvl 10',
+    'dustox': 'Lvl 10',
+    'ninjask': 'Lvl 20',
+
+    // --- SINNOH (Combee, Burmy, etc) ---
+    'vespiquen': 'Lvl 21 (Female only)',
+    'mothim': 'Lvl 20 (Male only)',
+    'wormadam': 'Lvl 20 (Female only)',
+    'mismeagius': 'Dusk Stone',
+    'honchkrow': 'Dusk Stone',
+    'weavile': 'Lvl Up + Hold Razor Claw (Night)',
+    'gliscor': 'Lvl Up + Hold Razor Fang (Night)',
+    'magnezone': 'Thunder Stone (or Magnetic Field)',
+    'probopass': 'Thunder Stone (or Magnetic Field)',
+    'leafeon': 'Leaf Stone (or Mossy Rock)',
+    'glaceon': 'Ice Stone (or Icy Rock)',
+    'gallade': 'Dawn Stone (Male only)',
+    'froslass': 'Dawn Stone (Female only)',
+    'rotom': 'Change appliance',
+    
+    // --- KALOS ---
+    'pangoro': 'Lvl 32 + Dark-type in party',
+    'malamar': 'Lvl 30 + Turn device upside down',
+    'sylveon': 'Friendship + Fairy Move',
+    'goodra': 'Lvl 50 (Rain)',
+    'aurorus': 'Lvl 39 (Night)',
+    'tyrantrum': 'Lvl 39 (Day)',
+
+    // --- ALOLA (GEN 7) ---
+    'persian-alola': 'Friendship (High)', 
+    'raticate-alola': 'Lvl 20 (Night)',
+    'raichu-alola': 'Thunder Stone (in Alola)',
+    'sandslash-alola': 'Ice Stone',
+    'ninetales-alola': 'Ice Stone',
+    'marowak-alola': 'Lvl 28 (Night in Alola)',
+    'exeggutor-alola': 'Leaf Stone (in Alola)',
+    'vikavolt': 'Thunder Stone (or Magnetic Field)',
+    'crabominable': 'Ice Stone (or Mt. Lanakila)',
+    'salazzle': 'Lvl 33 (Female only)',
+    'solgaleo': 'Lvl 53 (Sun / Sword)',
+    'lunala': 'Lvl 53 (Moon / Shield)',
+
+    // --- GALAR (GEN 8) ---
+    'appletun': 'Use Sweet Apple',
+    'flapple': 'Use Tart Apple',
+    'slowbro-galar': 'Use Galarica Cuff',
+    'slowking-galar': 'Use Galarica Wreath',
+    'weezing-galar': 'Lvl 35 (in Galar)',
+    'linoone-galar': 'Lvl 20 (Night)',
+    'obstagoon': 'Lvl 35 (Night)',
+    'perrserker': 'Lvl 28',
+    'cursola': 'Lvl 38',
+    'mr-mime-galar': 'Lvl Up (in Galar)', 
+    'mr-rime': 'Lvl 42',
+    'runerigus': '49+ DMG & Walk under Stone Arch',
+    'sirfetchd': '3 Critical Hits in one battle',
+    'frosmoth': 'Friendship (Night)',
+    'alcremie': 'Spin holding Sweet',
+    'darmanitan-galar-standard': 'Ice Stone',
+    'darmanitan-galar-zen': 'Use Zen Mode',
+    // Kubfu
+    'urshifu-single-strike': 'Scroll of Darkness (Tower of Darkness)',
+    'urshifu-rapid-strike': 'Scroll of Waters (Tower of Waters)',
+    
+    // --- HISUI (GEN 8) ---
+    'electrode-hisui': 'Leaf Stone',
+    'kleavor': 'Black Augurite',
+    'ursaluna': 'Peat Block (Full Moon)',
+    'basculegion': '294 Recoil DMG w/o fainting',
+    'sneasler': 'Use Razor Claw (Day)',
+    'overqwil': 'Use Barb Barrage 20 times (Strong Style)',
+    'wyrdeer': 'Use Psyshield Bash 20 times (Agile Style)',
+    'braviary-hisui': 'Lvl 54 (Hisui)',
+    'sliggoo-hisui': 'Lvl 40 (Rain)',
+    'goodra-hisui': 'Lvl 50 (Rain)',
+    'avalugg-hisui': 'Lvl 37 (Hisui)',
+    'decidueye-hisui': 'Lvl 34 (Hisui)',
+    'typhlosion-hisui': 'Lvl 36 (Hisui)',
+    'samurott-hisui': 'Lvl 36 (Hisui)',
+    'lilligant-hisui': 'Sun Stone',
+
+    // --- PALDEA (GEN 9) ---
+    // Applin line
+    'dipplin': 'Use Syrupy Apple',
+    'hydrapple': 'Lvl Up knowing Dragon Cheer',
+    
+    // Poltchageist
+    'sinistcha': 'Use Unremarkable or Masterpiece Teacup',
+
+    // Duraludon
+    'archaludon': 'Use Metal Alloy',
+
+    'annihilape': 'Use Rage Fist 20 times',
+    'kingambit': 'Defeat 3 Bisharp leaders',
+    'dudunsparce': 'Lvl Up knowing Hyper Drill',
+    'dudunsparce-two-segment': 'Lvl Up knowing Hyper Drill',
+    'dudunsparce-three-segment': 'Lvl Up knowing Hyper Drill (Rare)',
+    'farigiraf': 'Lvl Up knowing Twin Beam',
+    'maushold': 'Lvl 25 (Battle)',
+    'maushold-family-of-three': 'Lvl 25 (Rare)',
+    'pawmot': 'Walk 1000 steps (Let\'s Go mode)',
+    'brambleghast': 'Walk 1000 steps (Let\'s Go mode)',
+    'rabsca': 'Walk 1000 steps (Let\'s Go mode)',
+    'ceruledge': 'Malicious Armor',
+    'armarouge': 'Auspicous Armor',
+    'palafin': 'Lvl 38 (Multiplayer Union Circle)',
+    'gholdengo': '999 Gimmighoul Coins',
+  };
+
   static String getEvoNodeName(String base, String suffix) {
     if (base == 'dudunsparce') return 'dudunsparce-two-segment';
     if (base == 'maushold') return 'maushold-family-of-three';
@@ -10,6 +155,7 @@ class EvolutionHelper {
     if (base == 'yamask' && suffix == '-galar') return 'yamask-galar';
     if (base == 'darmanitan' && suffix == '-galar') return 'darmanitan-galar-standard';
     if (base == 'tauros' && suffix == '-paldea') return 'tauros-paldea-combat-breed';
+    if (base == 'slowpoke' && suffix == '-galar') return 'slowpoke-galar';
 
     if (suffix.isNotEmpty && !base.contains(suffix)) {
       if ((suffix == '-alola' && PokeConstants.alolanForms.contains(base)) ||
@@ -23,141 +169,224 @@ class EvolutionHelper {
   }
 
   static List filterEvolutions(List evos, String base, String suffix, String currentName) {
+    // 1. AISLAMIENTO MANAPHY / PHIONE
     if (base == 'manaphy' || base == 'phione') return [];
+    
     final cName = currentName.toLowerCase();
 
+    // 2. ROCKRUFF MULTIRAMA
+    if (base == 'rockruff') {
+      for (var e in evos) {
+        final details = e['evolution_details'] as List;
+        if (details.isEmpty) continue;
+        final time = details.first['time_of_day']?.toString() ?? "";
+        
+        if (time == 'night') e['species']['name'] = 'lycanroc-midnight';
+        else if (time == 'dusk' || (details.first['location'] == null && time == "")) e['species']['name'] = 'lycanroc-dusk';
+        else e['species']['name'] = 'lycanroc-midday';
+      }
+      return evos; 
+    }
+
+    // --- LÓGICA ESPECIAL SLOWPOKE (Galar vs Kanto) ---
+    if (base == 'slowpoke') {
+       if (suffix == '-galar') {
+         for (var e in evos) {
+            String name = e['species']['name'];
+            if (name == 'slowbro') e['species']['name'] = 'slowbro-galar';
+            if (name == 'slowking') e['species']['name'] = 'slowking-galar';
+         }
+         return evos.where((e) => e['species']['name'].toString().contains('galar')).toList();
+       } else {
+         return evos.where((e) => !e['species']['name'].toString().contains('galar')).toList();
+       }
+    }
+
+    // --- LÓGICA ESPECIAL ALOLA ---
+    if (suffix == '-alola') {
+       if (base == 'pikachu') {
+         for (var e in evos) if (e['species']['name'] == 'raichu') e['species']['name'] = 'raichu-alola';
+       }
+       if (base == 'exeggcute') {
+         for (var e in evos) if (e['species']['name'] == 'exeggutor') e['species']['name'] = 'exeggutor-alola';
+       }
+       if (base == 'cubone') {
+         for (var e in evos) if (e['species']['name'] == 'marowak') e['species']['name'] = 'marowak-alola';
+       }
+    }
+
+    // --- LÓGICA ESPECIAL GALAR ---
+    if (suffix == '-galar') {
+       if (base == 'koffing') {
+         for (var e in evos) if (e['species']['name'] == 'weezing') e['species']['name'] = 'weezing-galar';
+       }
+       if (base == 'mime-jr') {
+         for (var e in evos) if (e['species']['name'] == 'mr-mime') e['species']['name'] = 'mr-mime-galar';
+       }
+    }
+
+    // 3. INYECCIÓN MELTAN
+    if (base == 'meltan' && evos.isEmpty) {
+      return [{
+        'species': {'name': 'melmetal'},
+        'evolution_details': [{'trigger': {'name': 'pokemon-go'}}],
+        'evolves_to': []
+      }];
+    }
+
     return evos.where((e) {
-      String name = e['species']['name'];
+      String name = e['species']['name'].toLowerCase();
 
-      // Filtro reactivo para Rockruff -> Lycanroc
-      if (base == 'rockruff') {
-        if (cName.contains('midnight')) return name == 'lycanroc-midnight';
-        if (cName.contains('dusk')) return name == 'lycanroc-dusk';
-        return name == 'lycanroc-midday' || name == 'lycanroc';
+      // 4. FILTROS DE RAMAS
+      if (base == 'yamask') {
+        return suffix == '-galar' ? name == 'runerigus' : name == 'cofagrigus';
       }
+      
+      // Split Scyther / Kleavor
+      if (base == 'scyther') return suffix == '-hisui' ? name == 'kleavor' : name == 'scizor';
+      // Split Goomy
+      if (base == 'goomy') return suffix == '-hisui' ? name == 'sliggoo' : name == 'sliggoo'; 
+      // Split Dartrix
+      if (base == 'dartrix') return suffix == '-hisui' ? name == 'decidueye' : name == 'decidueye';
+      // Split Quilava
+      if (base == 'quilava') return suffix == '-hisui' ? name == 'typhlosion' : name == 'typhlosion';
+      // Split Dewott
+      if (base == 'dewott') return suffix == '-hisui' ? name == 'samurott' : name == 'samurott';
+      // Split Petilil
+      if (base == 'petilil') return suffix == '-hisui' ? name == 'lilligant' : name == 'lilligant';
+      // Split Rufflet
+      if (base == 'rufflet') return suffix == '-hisui' ? name == 'braviary' : name == 'braviary';
+      // Split Bergmite
+      if (base == 'bergmite') return suffix == '-hisui' ? name == 'avalugg' : name == 'avalugg';
 
-      // Filtro reactivo para Basculin -> Basculegion
-      if (base == 'basculin') {
-        return cName.contains('white-striped') && name == 'basculegion';
-      }
-
+      if (base == 'basculin') return cName.contains('white-striped') && name == 'basculegion';
       if (base == 'wooper') return suffix == '-paldea' ? name == 'clodsire' : name == 'quagsire';
       if (base == 'sneasel') return suffix == '-hisui' ? name == 'sneasler' : name == 'weavile';
       if (base == 'qwilfish') return suffix == '-hisui' && name == 'overqwil';
 
-      if (['ursaluna', 'wyrdeer', 'kleavor', 'annihilape', 'farigiraf', 'dudunsparce', 'kingambit', 'basculegion', 'runerigus', 'overqwil', 'archaludon', 'dipplin', 'hydrapple', 'pawmot', 'maushold', 'brambleghast', 'rabsca', 'palafin', 'gholdengo', 'sinistcha'].contains(name)) return true;
+      // Permitir evoluciones especiales nuevas
+      if (['melmetal', 'ursaluna', 'wyrdeer', 'kleavor', 'annihilape', 'farigiraf', 'dudunsparce', 
+           'kingambit', 'basculegion', 'runerigus', 'overqwil', 'archaludon', 'dipplin', 
+           'hydrapple', 'pawmot', 'maushold', 'brambleghast', 'rabsca', 'palafin', 
+           'gholdengo', 'sinistcha'].contains(name)) return true;
+
+      // Si tiene sufijo galar/hisui/paldea, debe pasar
+      if (name.contains('-galar') || name.contains('galar')) return true;
+      if (name.contains('-hisui')) return true;
+      if (name.contains('-paldea')) return true;
+      if (name.contains('-alola')) return true;
 
       if (suffix == '-galar') return PokeConstants.galarianEvolutions.contains(name) || PokeConstants.galarianForms.contains(name);
       if (suffix == '-hisui') return PokeConstants.hisuiLine.contains(name);
       if (suffix == '-paldea') return PokeConstants.paldeaLine.contains(name);
       
-      return !PokeConstants.galarianEvolutions.contains(name) && !PokeConstants.hisuianEvolutions.contains(name) && name != 'clodsire' && name != 'manaphy' && name != 'phione' && name != 'runerigus';
+      return !PokeConstants.galarianEvolutions.contains(name) && !PokeConstants.hisuianEvolutions.contains(name) && 
+             name != 'clodsire' && name != 'manaphy' && name != 'phione' && name != 'runerigus';
     }).toList();
   }
 
-  static String formatEvoDetails(List details, String to) {
-    final String target = to.toLowerCase();
-
-    // PRIORIDAD 0: OVERRIDES MANUALES (Manteniendo toda tu lista intacta)
-    if (target.contains('persian-alola')) return "Friendship & Lvl Up";
-    if (target.contains('raticate-alola')) return "Lvl 20 (Night)";
-    if (target.contains('raichu-alola')) return "Thunder Stone";
-    if (target.contains('sandslash-alola')) return "Ice Stone";
-    if (target.contains('ninetales-alola')) return "Ice Stone";
-    if (target.contains('marowak-alola')) return "Lvl 28 (Night)";
-    if (target.contains('vikavolt')) return "Magnetic Field or Thunder Stone";
-    if (target.contains('crabominable')) return "Mount Lanakila or Ice Stone";
-    if (target.contains('salazzle')) return "Lvl 33 (Female only)";
-    if (target.contains('solgaleo')) return "Lvl 53 (Sun/Ultra Sun/Sword)";
-    if (target.contains('lunala')) return "Lvl 53 (Moon/Ultra Moon/Shield)";
-    if (target.contains('lycanroc-midday')) return "Lvl 25 (Day)";
-    if (target.contains('lycanroc-midnight')) return "Lvl 25 (Night)";
-    if (target.contains('lycanroc-dusk')) return "Lvl 25 (Dusk) + Own Tempo";
-    if (target == 'leafeon') return "Leaf Stone";
-    if (target == 'glaceon') return "Ice Stone";
-    if (target.contains('slowbro-galar')) return "Galarica Cuff";
-    if (target.contains('slowking-galar')) return "Galarica Wreath";
-    if (target.contains('sirfetchd')) return "3 critical hits in a battle";
-    if (target.contains('darmanitan-galar')) return "Ice Stone";
-    if (target.contains('obstagoon')) return "Lvl 35 (Night)";
-    if (target.contains('perrserker')) return "Lvl 28";
-    if (target.contains('dipplin')) return "Syrupy Apple";
-    if (target.contains('hydrapple')) return "Lvl Up knowing Dragon Cheer";
-    if (target.contains('archaludon')) return "Metal Alloy";
-    if (target.contains('polteageist')) return "Cracked or Chipped Pot";
-    if (target.contains('sinistcha')) return "Unremarkable or Masterpiece Teacup";
-    if (target.contains('urshifu')) return "Scroll of Darkness or Waters";
-    if (target.contains('alcremie')) return "Hold Sweet item & Spin device";
-    if (target.contains('pawmot')) return "Walk 1000 steps (Let's Go) & Lvl Up";
-    if (target.contains('maushold')) return "Lvl 25 (May evolve without animation)";
-    if (target.contains('brambleghast')) return "Walk 1000 steps (Let's Go) & Lvl Up";
-    if (target.contains('rabsca')) return "Walk 1000 steps (Let's Go) & Lvl Up";
-    if (target.contains('palafin')) return "Lvl 38+ in Union Circle";
-    if (target.contains('gholdengo')) return "Lvl Up with 999 Coins";
-    if (target.contains('annihilape')) return "Use Rage Fist 20 times & Lvl Up";
-    if (target.contains('kingambit')) return "Defeat 3 Leader Bisharp & Lvl Up";
-    if (target.contains('basculegion')) return "White-Striped: 300 Recoil Damage & Lvl Up";
-    if (target.contains('ursaluna')) return "Peat Block during a Full Moon";
-    if (target.contains('wyrdeer')) return "Use Psyshield Bash (Agile) 20 times";
-    if (target.contains('kleavor')) return "Black Augurite";
-    if (target.contains('overqwil')) return "Use Barb Barrage (Strong) 20 times";
-    if (target.contains('sneasler')) return "Lvl Up holding Razor Claw (Day)";
-    if (target.contains('electrode-hisui')) return "Leaf Stone";
-    if (target.contains('runerigus')) return "Take 49+ damage & pass under Arch";
-    if (target.contains('escavalier')) return "Trade for Shelmet";
-    if (target.contains('accelgor')) return "Trade for Karrablast";
-    if (target == 'gliscor') return "Lvl Up holding Razor Fang (Night)";
-    if (target == 'weavile') return "Lvl Up holding Razor Claw (Night)";
-    if (target == 'malamar') return "Lvl 30 + Hold device upside down";
-    if (target == 'tyrantrum') return "Lvl 39 (Day)";
-    if (target == 'aurorus') return "Lvl 39 (Night)";
-    if (target.contains('goodra')) return "Lvl 50 during Rain or Fog";
-    if (target == 'shedinja') return "Lvl 20 + Empty Slot & Poké Ball";
-    if (target == 'milotic') return "Prism Scale (Trade) or High Beauty";
-    if (target == 'gallade') return "Dawn Stone (Male only)";
-    if (target == 'froslass') return "Dawn Stone (Female only)";
-    if (target == 'mantine') return "Lvl Up with Remoraid in Party";
-    if (target == 'vespiquen') return "Lvl 21 (Female only)";
-    if (target == 'mothim') return "Lvl 20 (Male only)";
-    if (target == 'wormadam') return "Lvl 20 (Female only)";
-
+  static String formatEvoDetails(List details, String to, String currentSuffix) {
     if (details.isEmpty) return "";
-    Map<String, dynamic> selectedDetail = details.first; 
-    for (var d in details) {
-      final held = d['held_item']?['name']?.toString() ?? "";
-      final time = d['time_of_day'] ?? "";
-      final gender = d['gender'];
-      if (target.contains('gallade') && gender == 2) { selectedDetail = d; break; }
-      if (target.contains('froslass') && gender == 1) { selectedDetail = d; break; }
-      if (target.contains('chansey') && (d['item']?['name'] == 'oval-stone' || held.contains('oval'))) { selectedDetail = d; break; }
+    String target = to.toLowerCase();
+
+    // 1. CHECK MANUAL: Prioridad absoluta al mapa manual
+    if (_manualOverrides.containsKey(target)) {
+      return _manualOverrides[target]!;
+    }
+    // Caso especial para formas regionales cuyo "target" en la API no tiene sufijo
+    if (currentSuffix.isNotEmpty) {
+      final overrideKey = "$target$currentSuffix"; // ej: slowbro-galar
+      if (_manualOverrides.containsKey(overrideKey)) {
+        return _manualOverrides[overrideKey]!;
+      }
     }
 
-    final trigger = selectedDetail['trigger']['name'];
-    final timeOfDay = selectedDetail['time_of_day'] ?? "";
+    // 2. SELECCIÓN INTELIGENTE DE DETALLES
+    Map<String, dynamic> selectedDetail = details.first; 
 
+    if (details.length > 1) {
+      if (currentSuffix == '-alola') {
+        var alolaDetail = details.firstWhere((d) {
+          final item = d['item']?['name'] ?? '';
+          final time = d['time_of_day']?.toString() ?? '';
+          return item == 'ice-stone' || item == 'thunder-stone' || time == 'night';
+        }, orElse: () => null);
+        if (alolaDetail != null) selectedDetail = alolaDetail;
+      } else if (currentSuffix == '-galar') {
+        var galarDetail = details.firstWhere((d) {
+           final item = d['item']?['name'] ?? '';
+           return item.contains('galarica') || item == 'ice-stone';
+        }, orElse: () => null);
+        if (galarDetail != null) selectedDetail = galarDetail;
+      } else {
+        var kantoDetail = details.firstWhere((d) {
+           final item = d['item']?['name'] ?? '';
+           return item != 'ice-stone' && !item.contains('galarica'); 
+        }, orElse: () => details.first);
+        selectedDetail = kantoDetail;
+      }
+    }
+
+    // Lógica para Gallade/Froslass (Género)
+    if (target.contains('gallade')) {
+       var d = details.firstWhere((d) => d['gender'] == 2, orElse: () => selectedDetail);
+       selectedDetail = d;
+    }
+    if (target.contains('froslass')) {
+       var d = details.firstWhere((d) => d['gender'] == 1, orElse: () => selectedDetail);
+       selectedDetail = d;
+    }
+
+    // 3. PARSEO ESTÁNDAR
+    final trigger = selectedDetail['trigger']['name']?.toString();
+    final String timeOfDay = selectedDetail['time_of_day']?.toString() ?? "";
+    final heldItem = selectedDetail['held_item'];
+    final item = selectedDetail['item'];
+    final knownMove = selectedDetail['known_move'];
+    final minLevel = selectedDetail['min_level'];
+    final minHappy = selectedDetail['min_happiness'];
+    final minAffection = selectedDetail['min_affection'];
+    final location = selectedDetail['location'];
+
+    // Trades
     if (trigger == 'trade') {
-      if (selectedDetail['held_item'] != null) return "Trade + ${selectedDetail['held_item']['name'].toString().cleanName.capitalize}";
+      if (heldItem != null) return "Trade + ${heldItem['name'].toString().cleanName}";
+      if (target.contains('accelgor') || target.contains('escavalier')) return "Trade for Karrablast/Shelmet";
       return "Trade";
     }
-    if (selectedDetail['item'] != null) return selectedDetail['item']['name'].toString().cleanName.capitalize;
+
+    // Items
+    if (item != null) return item['name'].toString().cleanName;
+
+    // Level Up conditions
     if (trigger == 'level-up') {
-      if ((target.contains('magnezone') || target.contains('probopass') || target.contains('vikavolt')) && (selectedDetail['location'] != null || selectedDetail['item'] != null)) return "Magnetic Field or Thunder Stone";
-      if (target.contains('chansey')) return "Lvl Up holding Oval Stone (Day)";
-      if (target.contains('espeon')) return "Friendship (Day) & Lvl Up";
-      if (target.contains('umbreon')) return "Friendship (Night) & Lvl Up";
-      if (target.contains('sylveon')) return "Friendship + Fairy Move & Lvl Up";
-      if (selectedDetail['min_level'] != null) {
-        String lvl = "Lvl ${selectedDetail['min_level']}";
-        if (target.contains('hitmonlee')) return "$lvl (Atk > Def)";
-        if (target.contains('hitmonchan')) return "$lvl (Def > Atk)";
-        if (target.contains('hitmontop')) return "$lvl (Atk = Def)";
-        if (timeOfDay == 'night') return "$lvl (Night)";
-        if (timeOfDay == 'day') return "$lvl (Day)";
-        return lvl;
-      }
-      if (selectedDetail['min_happiness'] != null) return "Friendship & Lvl Up";
-      if (selectedDetail['known_move'] != null) return "Lvl Up knowing ${selectedDetail['known_move']['name'].toString().cleanName.capitalize}";
+      List<String> conditions = [];
+
+      if (minLevel != null) conditions.add("Lvl $minLevel");
+      else if (minHappy == null && knownMove == null && location == null && minAffection == null) conditions.add("Lvl Up");
+
+      if (minHappy != null) conditions.add("Friendship");
+      if (minAffection != null) conditions.add("Affection");
+      
+      // SOLUCIÓN DEL ERROR DEL PANTALLAZO:
+      if (timeOfDay.isNotEmpty) conditions.add("(${timeOfDay.capitalize})");
+      
+      if (location != null) conditions.add("near ${location['name'].toString().cleanName}");
+      if (heldItem != null) conditions.add("holding ${heldItem['name'].toString().cleanName}");
+      if (knownMove != null) conditions.add("knows ${knownMove['name'].toString().cleanName}");
+      
+      // Casos Tyrogue
+      if (target.contains('hitmonlee')) conditions.add("(Atk > Def)");
+      if (target.contains('hitmonchan')) conditions.add("(Def > Atk)");
+      if (target.contains('hitmontop')) conditions.add("(Atk = Def)");
+      
+      if (conditions.isEmpty) return "Lvl Up";
+      return conditions.join(" ");
     }
+    
+    // Shedinja fallback
+    if (target == 'shedinja') return "Lvl 20 (Empty Slot & Poké Ball)";
+
     return trigger.toString().cleanName.capitalize;
   }
 }

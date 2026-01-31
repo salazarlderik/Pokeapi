@@ -6,7 +6,7 @@ extension StringExtensions on String {
   String get cleanName {
     String raw = toLowerCase().trim();
 
-    // 1. Casos Especiales de nombres largos
+    // 1. Manejo de formas ultra-largas y casos especiales
     if (raw.contains('tauros-paldea')) {
       if (raw.contains('combat')) return 'Paldea Tauros (Combat)';
       if (raw.contains('blaze')) return 'Paldea Tauros (Blaze)';
@@ -16,8 +16,10 @@ extension StringExtensions on String {
     if (raw == 'basculin-white-striped') return 'White-Striped Basculin';
     if (raw.contains('darmanitan-galar-standard')) return 'Galar Darmanitan';
     if (raw.contains('darmanitan-galar-zen')) return 'Galar Darmanitan (Zen)';
+    if (raw.contains('urshifu-single-strike')) return 'Urshifu (Single Strike)';
+    if (raw.contains('urshifu-rapid-strike')) return 'Urshifu (Rapid Strike)';
 
-    // 2. Prefijos Regionales (Alola, Galar, Hisui, Paldea)
+    // 2. Prefijos Regionales cortos (Alola, Galar, Hisui, Paldea)
     String prefix = "";
     String name = raw;
 
@@ -27,7 +29,6 @@ extension StringExtensions on String {
     else if (name.contains('-paldea')) { prefix = "Paldea "; name = name.replaceAll('-paldea', ''); }
 
     String cleanBase = name.replaceAll('-', ' ').split(' ').map((w) => w.capitalize).join(' ');
-    
     return "$prefix$cleanBase".trim();
   }
 

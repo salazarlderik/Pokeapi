@@ -58,12 +58,10 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
     }
   }
 
-  // --- MÉTODO ACTUALIZADO: Identifica sufijos para activar evoluciones regionales ---
   String _getRegionSuffix() {
     final String name = _currentPokemonNameForEvo.toLowerCase();
     final String species = widget.species['name'].toLowerCase();
 
-    // Caso especial: Basculin Raya Blanca activa la rama de Hisui (Basculegion)
     if (name.contains('white-striped')) return '-hisui';
 
     if (name.contains('-alola')) return '-alola';
@@ -79,11 +77,7 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
 
   Future<void> _loadAllDataForCurrentForm() async {
     if (!mounted) return;
-    setState(() {
-      _isLoadingAbilities = true;
-      _isLoadingTypeDefenses = true;
-      _isLoadingVarietyTypes = true;
-    });
+    setState(() { _isLoadingAbilities = true; _isLoadingTypeDefenses = true; _isLoadingVarietyTypes = true; });
     await Future.wait([
       _fetchAbilityDetails(_currentPokemonData, context.locale.languageCode),
       _fetchTypeEffectiveness(_currentPokemonData),
@@ -94,8 +88,11 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
   Future<void> _fetchEvolutionChain() async {
     setState(() => _isLoadingEvolution = true);
     String speciesEvo = widget.species['name'];
+    
+    // CAPA DE SEGURIDAD: Forzamos el origen de la cadena para Melmetal
     if (speciesEvo == 'ursaluna') speciesEvo = 'teddiursa';
     if (speciesEvo.startsWith('dudunsparce')) speciesEvo = 'dunsparce';
+    if (speciesEvo == 'melmetal') speciesEvo = 'meltan'; // Melmetal busca a Meltan para ver la cadena completa
 
     try {
       final speciesData = await _apiService.fetchPokemonSpecies(speciesEvo);
@@ -175,54 +172,25 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Indicador LED Azul decorativo
-            Container(
-              width: 12, height: 12,
-              decoration: BoxDecoration(
-                color: Colors.lightBlueAccent,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.blue.withValues(alpha: 0.7), 
-                    blurRadius: 6, 
-                    spreadRadius: 2
-                  )
-                ],
-              ),
-            ),
+            Container(width: 12, height: 12, decoration: BoxDecoration(color: Colors.lightBlueAccent, shape: BoxShape.circle, boxShadow: [BoxShadow(color: Colors.blue.withValues(alpha: 0.7), blurRadius: 6, spreadRadius: 2)])),
             const SizedBox(width: 15),
-            // NOMBRE DEL POKÉMON CON CLEANNAME Y AJUSTE DE TAMAÑO DINÁMICO
             Flexible(
               child: FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Text(
                   _currentPokemonData['name'].toString().cleanName,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 22,
-                    color: Colors.white,
-                  ),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 22, color: Colors.white),
                 ),
               ),
             ),
           ],
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.language, color: Colors.white), 
-            onPressed: () => context.setLocale(
-              context.locale == const Locale('en') ? const Locale('es') : const Locale('en')
-            )
-          )
+          IconButton(icon: const Icon(Icons.language, color: Colors.white), onPressed: () => context.setLocale(context.locale == const Locale('en') ? const Locale('es') : const Locale('en')))
         ],
       ),
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter, end: Alignment.bottomCenter,
-            colors: [mainColor.withValues(alpha: 0.3), Theme.of(context).scaffoldBackgroundColor],
-          ),
-        ),
+        decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [mainColor.withValues(alpha: 0.3), Theme.of(context).scaffoldBackgroundColor])),
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -231,7 +199,6 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
               _isLoadingVarietyTypes ? const Center(child: CircularProgressIndicator()) : _buildFormSelector(mainColor),
               Hero(tag: 'pokemon-${widget.species['id']}', child: imageUrl.isEmpty ? const Icon(Icons.image_not_supported, size: 200) : Image.network(imageUrl, height: 250, fit: BoxFit.contain)),
               const SizedBox(height: 16),
-              // NOMBRE DEBAJO DE LA IMAGEN LIMPIO
               Text(name.toString().cleanName.toUpperCase(), textAlign: TextAlign.center, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
               Wrap(alignment: WrapAlignment.center, spacing: 8, children: types.map((t) => _buildTypeChip(t)).toList()),
               const SizedBox(height: 24),
@@ -293,50 +260,19 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
   }
 
   Widget _buildStatsCard(String id, int weight, int height) {
-    return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 10),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            _statCol('stats.weight'.tr(), '${weight / 10} kg', Icons.fitness_center),
-            _vDivider(),
-            _statCol('stats.id'.tr(), '#${id.padLeft(3, '0')}', Icons.tag),
-            _vDivider(),
-            _statCol('stats.height'.tr(), '${height / 10} m', Icons.height),
-          ],
-        ),
-      ),
-    );
+    return Card(elevation: 3, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), child: Padding(padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 10), child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [_statCol('stats.weight'.tr(), '${weight / 10} kg', Icons.fitness_center), _vDivider(), _statCol('stats.id'.tr(), '#${id.padLeft(3, '0')}', Icons.tag), _vDivider(), _statCol('stats.height'.tr(), '${height / 10} m', Icons.height)])));
   }
 
   Widget _vDivider() => Container(width: 1, height: 30, color: Colors.grey[300]);
 
   Widget _statCol(String label, String value, IconData icon) {
-    return Expanded(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: Colors.grey[500], size: 22),
-          const SizedBox(height: 8),
-          Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
-          const SizedBox(height: 4),
-          Text(label.toUpperCase(), style: TextStyle(fontSize: 11, color: Colors.grey[500], fontWeight: FontWeight.w600)),
-        ],
-      ),
-    );
+    return Expanded(child: Column(mainAxisSize: MainAxisSize.min, children: [Icon(icon, color: Colors.grey[500], size: 22), const SizedBox(height: 8), Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)), const SizedBox(height: 4), Text(label.toUpperCase(), style: TextStyle(fontSize: 11, color: Colors.grey[500], fontWeight: FontWeight.w600))]));
   }
 
   Widget _buildStatBar(dynamic stat) {
     final int val = stat['base_stat'];
     final color = val <= 59 ? Colors.red : val <= 99 ? Colors.yellow.shade700 : val <= 159 ? Colors.green : Colors.blue;
-    return Column(children: [
-      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text(_translateStat(stat['stat']['name']).tr(), style: const TextStyle(fontWeight: FontWeight.bold)), Text(val.toString(), style: const TextStyle(fontWeight: FontWeight.bold))]),
-      ClipRRect(borderRadius: BorderRadius.circular(8), child: LinearProgressIndicator(value: val / 200, backgroundColor: color.withValues(alpha: 0.2), valueColor: AlwaysStoppedAnimation(color), minHeight: 12)),
-      const SizedBox(height: 8),
-    ]);
+    return Column(children: [Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text(_translateStat(stat['stat']['name']).tr(), style: const TextStyle(fontWeight: FontWeight.bold)), Text(val.toString(), style: const TextStyle(fontWeight: FontWeight.bold))]), ClipRRect(borderRadius: BorderRadius.circular(8), child: LinearProgressIndicator(value: val / 200, backgroundColor: color.withValues(alpha: 0.2), valueColor: AlwaysStoppedAnimation(color), minHeight: 12)), const SizedBox(height: 8)]);
   }
 
   String _translateStat(String s) => s == 'special-attack' ? 'stats.sp_atk' : s == 'special-defense' ? 'stats.sp_def' : 'stats.$s';
@@ -361,10 +297,10 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
     setState(() { 
       _currentPokemonData = data; 
       _currentVarietyName = name; 
-      _currentPokemonNameForEvo = name; 
+      _currentPokemonNameForEvo = name; // Vital para filtros reactivos
       _regionSuffixForEvo = _getRegionSuffix(); 
     });
     _loadAllDataForCurrentForm(); 
-    _fetchEvolutionChain();
+    _fetchEvolutionChain(); // Esto fuerza a que la tabla se redibuje con el filtro nuevo
   }
 }
