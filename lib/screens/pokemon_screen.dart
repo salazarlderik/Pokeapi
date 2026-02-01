@@ -8,6 +8,8 @@ import '../widgets/pokemon_list_card.dart';
 import '../utils/pokemon_constants.dart';
 import '../utils/pokemon_extensions.dart';
 
+/// Pantalla que muestra la cuadrícula de Pokémon de una región específica.
+/// Maneja la búsqueda, el filtrado por tipos y la visualización responsiva.
 class PokemonScreen extends StatefulWidget {
   final String regionNameKey;
   const PokemonScreen({super.key, required this.regionNameKey});
@@ -17,6 +19,7 @@ class PokemonScreen extends StatefulWidget {
 }
 
 class _PokemonScreenState extends State<PokemonScreen> {
+  // Controladores para el input de búsqueda y el scroll de la grilla.
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   
@@ -29,13 +32,15 @@ class _PokemonScreenState extends State<PokemonScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Usamos listen: false aquí para que el build principal no se confunda
+    // Obtenemos el provider sin escuchar cambios (listen: false) para evitar
+    // que todo el Scaffold se redibuje innecesariamente; solo el Consumer lo hará.
     Provider.of<PokemonProvider>(context, listen: false);
 
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.regionNameKey).tr(),
         actions: [
+          // Botón para alternar idioma (EN/ES)
           IconButton(
             icon: const Icon(Icons.language),
             onPressed: () => context.setLocale(
@@ -44,12 +49,14 @@ class _PokemonScreenState extends State<PokemonScreen> {
           ),
         ],
       ),
+      // Usamos Consumer para reconstruir SOLO el cuerpo cuando cambian los filtros o datos.
       body: Consumer<PokemonProvider>(
         builder: (context, provider, child) {
           if (provider.isLoading) return const Center(child: CircularProgressIndicator());
 
           return Column(
             children: [
+              // Barra de búsqueda y botón de filtro
               Padding(
                 padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
                 child: Row(
@@ -60,6 +67,7 @@ class _PokemonScreenState extends State<PokemonScreen> {
                   ],
                 ),
               ),
+              // Área principal: Lista vacía o Grid de Pokémon
               Expanded(
                 child: provider.filteredPokemon.isEmpty
                     ? Center(child: Text('no_pokemon_found'.tr()))
@@ -75,7 +83,7 @@ class _PokemonScreenState extends State<PokemonScreen> {
   Widget _buildSearchBar(PokemonProvider provider) {
     return TextField(
       controller: _searchController,
-      onChanged: (val) => provider.updateSearch(val),
+      onChanged: (val) => provider.updateSearch(val), // Actualiza el filtro en tiempo real
       decoration: InputDecoration(
         hintText: "Search",
         prefixIcon: const Icon(Icons.search),
@@ -90,15 +98,18 @@ class _PokemonScreenState extends State<PokemonScreen> {
     );
   }
 
+  /// Construye el menú desplegable para filtrar por tipo elemental.
   Widget _buildTypeMenu(PokemonProvider provider) {
     return PopupMenuButton<String?>(
       initialValue: provider.selectedType,
       onSelected: (String? type) {
         if (type == null) {
-          // --- EFECTO FLECHA DE REGRESO (REINICIO TOTAL) ---
+          // --- LÓGICA DE RESET TOTAL ---
+          // Al seleccionar "All Types", limpiamos los filtros en el provider
           provider.resetToDefault(); 
           
-          // Sustituimos la pantalla por una nueva idéntica pero limpia
+          // Recargamos la pantalla completa para asegurar que el estado visual (scroll, focus)
+          // se limpie perfectamente y volver al estado inicial.
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
@@ -106,6 +117,7 @@ class _PokemonScreenState extends State<PokemonScreen> {
             ),
           );
         } else {
+          // Aplicamos filtro por tipo y volvemos al inicio de la lista
           provider.updateType(type);
           if (_scrollController.hasClients) _scrollController.jumpTo(0);
         }
@@ -129,6 +141,7 @@ class _PokemonScreenState extends State<PokemonScreen> {
           child: Text("All Types", style: TextStyle(fontWeight: FontWeight.bold))
         ),
         const PopupMenuDivider(),
+        // Generamos dinámicamente las opciones de tipos con sus iconos SVG
         ...PokeConstants.allTypes.map((type) => PopupMenuItem<String>(
           value: type,
           child: Row(
@@ -154,10 +167,13 @@ class _PokemonScreenState extends State<PokemonScreen> {
   Widget _buildGrid(BuildContext context, PokemonProvider provider) {
     final pokemonList = provider.filteredPokemon;
     final screenWidth = MediaQuery.of(context).size.width;
+    
+    // Cálculo responsivo: Determina columnas según el ancho del dispositivo
     int crossAxisCount = screenWidth > 1200 ? 5 : screenWidth > 800 ? 4 : screenWidth > 500 ? 3 : 2;
 
     return GridView.builder(
       controller: _scrollController,
+      // ValueKey fuerza a reconstruir el Grid si cambian los filtros para evitar errores de renderizado
       key: ValueKey('grid_${provider.selectedType}_${provider.searchQuery}'),
       padding: const EdgeInsets.all(12),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -171,7 +187,8 @@ class _PokemonScreenState extends State<PokemonScreen> {
         return PokemonListCard(
           key: ValueKey(pokemonList[index]['name']),
           pokemonSpecies: pokemonList[index], 
-          suffix: provider.currentRegionSuffix, // PASAMOS EL SUFIJO AQUÍ
+          // Pasamos el sufijo (ej: '-hisui') a la tarjeta para que cargue la imagen/tipos correctos
+          suffix: provider.currentRegionSuffix, 
         );
       },
     );

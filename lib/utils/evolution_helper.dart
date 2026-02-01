@@ -2,8 +2,13 @@ import 'package:easy_localization/easy_localization.dart';
 import 'pokemon_extensions.dart';
 import 'pokemon_constants.dart';
 
+/// Clase de utilidad estática para procesar la compleja lógica de las cadenas evolutivas.
+/// Se encarga de traducir condiciones (Nivel, Items), filtrar ramas regionales y corregir nombres.
 class EvolutionHelper {
+  
   // --- MAPA DE SEGURIDAD (OVERRIDES MANUALES) ---
+  // Diccionario de textos predefinidos para evoluciones con condiciones muy específicas 
+  // (ej: voltear la consola, amistad, items oscuros) que la API devuelve de forma genérica o difícil de parsear.
   static const Map<String, String> _manualOverrides = {
     // KANTO / JOHTO
     'pichu': 'Friendship',
@@ -29,7 +34,7 @@ class EvolutionHelper {
     'gorebyss': 'Trade + Deep Sea Scale',
     'milotic': 'Trade + Prism Scale (or High Beauty)',
     
-    // Especiales
+    // Especiales (Lógica compleja que no cabe en un campo estándar de la API)
     'mantine': 'Lvl Up with Remoraid in party',
     'shedinja': 'Lvl 20 + Empty Slot & Poké Ball',
     'hitmontop': 'Lvl 20 (Atk = Def)',
@@ -59,7 +64,7 @@ class EvolutionHelper {
     'froslass': 'Dawn Stone (Female only)',
     'rotom': 'Change appliance',
     
-    // KALOS
+    // KALOS (Evoluciones únicas como Inkay)
     'pangoro': 'Lvl 32 + Dark-type in party',
     'malamar': 'Lvl 30 + Turn device upside down',
     'sylveon': 'Friendship + Fairy Move',
@@ -100,7 +105,6 @@ class EvolutionHelper {
     'darmanitan-galar-standard': 'Ice Stone',
     'darmanitan-galar-zen': 'Use Zen Mode',
     
-    // CORREGIDO: KUBFU AHORA MENCIONA AMBAS TORRES
     // Si la API detecta el item específico:
     'urshifu-single-strike': 'Scroll of Darkness (Tower of Darkness)',
     'urshifu-rapid-strike': 'Scroll of Waters (Tower of Waters)',
@@ -147,6 +151,9 @@ class EvolutionHelper {
     'gholdengo': '999 Gimmighoul Coins',
   };
 
+  /// Determina el nombre exacto de la imagen/nodo a mostrar.
+  /// Si el sufijo es '-hisui' y el Pokémon es 'sneasel', devuelve 'sneasel-hisui'.
+  /// Esto asegura que veamos la imagen correcta en la tabla.
   static String getEvoNodeName(String base, String suffix) {
     if (base == 'dudunsparce') return 'dudunsparce-two-segment';
     if (base == 'maushold') return 'maushold-family-of-three';
@@ -167,12 +174,15 @@ class EvolutionHelper {
     return base;
   }
 
+  /// Filtra la lista cruda de evoluciones de la API.
+  /// Si estamos viendo la versión de Galar, oculta las evoluciones de Kanto y viceversa.
+  /// También maneja lógica de Pokémon con múltiples formas base (Rockruff, Kubfu).
   static List filterEvolutions(List evos, String base, String suffix, String currentName) {
     if (base == 'manaphy' || base == 'phione') return [];
     
     final cName = currentName.toLowerCase();
 
-    // 1. ROCKRUFF
+    // 1. CASO ROCKRUFF: Evoluciona distinto según la hora del día (Midday, Midnight, Dusk).
     if (base == 'rockruff') {
       for (var e in evos) {
         final details = e['evolution_details'] as List;
@@ -186,7 +196,7 @@ class EvolutionHelper {
       return evos; 
     }
 
-    // 2. KUBFU - Intentar separar por items
+    // 2. CASO KUBFU: Detecta el item "Scroll" para diferenciar los estilos de Urshifu.
     if (base == 'kubfu') {
       for (var e in evos) {
         final details = e['evolution_details'] as List;
@@ -199,7 +209,7 @@ class EvolutionHelper {
       }
     }
 
-    // SLOWPOKE GALAR
+    // CASO SLOWPOKE: Separa la rama evolutiva de Galar (Cuff/Wreath) de la de Kanto (Lvl/Trade).
     if (base == 'slowpoke') {
        if (suffix == '-galar') {
          for (var e in evos) {
@@ -213,7 +223,7 @@ class EvolutionHelper {
        }
     }
 
-    // ALOLA FORCED
+    // FORZADO ALOLA: Si tenemos el sufijo, obligamos a que evolucione a la forma Alola.
     if (suffix == '-alola') {
        if (base == 'pikachu') {
          for (var e in evos) if (e['species']['name'] == 'raichu') e['species']['name'] = 'raichu-alola';
@@ -226,7 +236,7 @@ class EvolutionHelper {
        }
     }
 
-    // GALAR FORCED
+    // FORZADO GALAR: Lo mismo para formas Galar.
     if (suffix == '-galar') {
        if (base == 'koffing') {
          for (var e in evos) if (e['species']['name'] == 'weezing') e['species']['name'] = 'weezing-galar';
@@ -236,7 +246,7 @@ class EvolutionHelper {
        }
     }
 
-    // MELTAN
+    // CASO MELTAN: La API a veces devuelve vacío, lo forzamos manualmente.
     if (base == 'meltan' && evos.isEmpty) {
       return [{
         'species': {'name': 'melmetal'},
@@ -245,6 +255,8 @@ class EvolutionHelper {
       }];
     }
 
+    // FILTRO GENERAL: Elimina de la lista las evoluciones que no coinciden con la región actual.
+    // (Ej: Si estoy viendo un Cyndaquil normal, no muestro Typhlosion de Hisui).
     return evos.where((e) {
       String name = e['species']['name'].toLowerCase();
 
@@ -266,11 +278,13 @@ class EvolutionHelper {
       if (base == 'sneasel') return suffix == '-hisui' ? name == 'sneasler' : name == 'weavile';
       if (base == 'qwilfish') return suffix == '-hisui' && name == 'overqwil';
 
+      // Lista blanca de evoluciones nuevas que siempre deben pasar
       if (['melmetal', 'ursaluna', 'wyrdeer', 'kleavor', 'annihilape', 'farigiraf', 'dudunsparce', 
            'kingambit', 'basculegion', 'runerigus', 'overqwil', 'archaludon', 'dipplin', 
            'hydrapple', 'pawmot', 'maushold', 'brambleghast', 'rabsca', 'palafin', 
            'gholdengo', 'sinistcha', 'urshifu-single-strike', 'urshifu-rapid-strike'].contains(name)) return true;
 
+      // Lógica de descarte por región
       if (name.contains('-galar') || name.contains('galar')) return true;
       if (name.contains('-hisui')) return true;
       if (name.contains('-paldea')) return true;
@@ -285,10 +299,12 @@ class EvolutionHelper {
     }).toList();
   }
 
+  /// Construye el texto explicativo de la flecha (Ej: "Lvl 36", "Thunder Stone").
+  /// Prioriza el mapa manual `_manualOverrides` y si no, intenta parsear el JSON de la API.
   static String formatEvoDetails(List details, String to, String currentSuffix) {
     String target = to.toLowerCase();
 
-    // 1. CHECK MANUAL (Primero)
+    // 1. CHECK MANUAL: Si está en el mapa, devolvemos el texto fijo (Más rápido y preciso).
     if (_manualOverrides.containsKey(target)) {
       return _manualOverrides[target]!;
     }
@@ -301,7 +317,7 @@ class EvolutionHelper {
 
     if (details.isEmpty) return "";
 
-    // 2. SELECCIÓN INTELIGENTE
+    // 2. SELECCIÓN INTELIGENTE: Si hay múltiples métodos, tratamos de elegir el más lógico según la región.
     Map<String, dynamic> selectedDetail = details.first; 
 
     if (details.length > 1) {
@@ -327,6 +343,7 @@ class EvolutionHelper {
       }
     }
 
+    // Casos especiales de género (Gallade es solo macho, Froslass es solo hembra)
     if (target.contains('gallade')) {
        var d = details.firstWhere((d) => d['gender'] == 2, orElse: () => selectedDetail);
        selectedDetail = d;
@@ -336,7 +353,7 @@ class EvolutionHelper {
        selectedDetail = d;
     }
 
-    // 3. PARSEO ESTÁNDAR
+    // 3. PARSEO ESTÁNDAR: Convertimos el JSON (trigger, min_level, item) a String.
     final trigger = selectedDetail['trigger']['name']?.toString();
     final String timeOfDay = selectedDetail['time_of_day']?.toString() ?? "";
     final heldItem = selectedDetail['held_item'];

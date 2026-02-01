@@ -4,6 +4,8 @@ import '../utils/evolution_helper.dart';
 import '../utils/pokemon_extensions.dart';
 import '../screens/pokemon_detail_screen.dart';
 
+/// Widget recursivo que visualiza la cadena evolutiva.
+/// Maneja estructuras lineales y ramificadas (ej: Eevee, Applin).
 class EvolutionChainWidget extends StatelessWidget {
   final Map<String, dynamic> chain;
   final String regionSuffix;
@@ -21,10 +23,13 @@ class EvolutionChainWidget extends StatelessWidget {
     return _buildBranch(chain, regionSuffix, context);
   }
 
+  /// Construye una rama del árbol evolutivo. Se llama a sí mismo recursivamente
+  /// si el Pokémon tiene evoluciones posteriores.
   Widget _buildBranch(Map<String, dynamic> link, String suffix, BuildContext context) {
     String base = link['species']['name'];
     
-    // Sincronización para Lycanroc
+    // Lógica especial para Lycanroc: La API devuelve "Lycanroc" genérico,
+    // aquí forzamos el nombre de la forma específica (Midnight/Dusk) según lo que estemos viendo.
     String pName = EvolutionHelper.getEvoNodeName(base, suffix);
     if (base == 'lycanroc') {
       if (currentPokemonName.contains('midnight')) pName = 'lycanroc-midnight';
@@ -35,8 +40,10 @@ class EvolutionChainWidget extends StatelessWidget {
     Widget node = _buildNode(pName, context);
     List evos = link['evolves_to'] ?? [];
     
+    // Filtramos evoluciones irrelevantes (ej: Si veo Slowpoke Kanto, oculto Slowbro Galar)
     List filtered = EvolutionHelper.filterEvolutions(evos, base, suffix, currentPokemonName);
     
+    // Caso base: Si no tiene evoluciones filtradas, solo devolvemos el nodo actual (imagen).
     if (filtered.isEmpty) return node;
 
     return Row(
@@ -44,24 +51,26 @@ class EvolutionChainWidget extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center, 
       children: [
         node,
+        // Columna para manejar múltiples ramificaciones (ej: Applin -> Flapple / Appletun)
         Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
-          // --- CAMBIO CLAVE AQUÍ: 'start' ---
-          // Al usar 'start', forzamos a que Flapple, Appletun y Dipplin
-          // comiencen exactamente en el mismo eje vertical izquierdo,
-          // ignorando que la rama de Dipplin sea más larga por Hydrapple.
+          // CLAVE DE DISEÑO: Alineación 'start' para que ramas de diferente longitud
+          // (ej: Dipplin vs Flapple) comiencen alineadas a la izquierda y no se vean desordenadas.
           crossAxisAlignment: CrossAxisAlignment.start,
           children: filtered.map((e) {
             String targetEvoName = e['species']['name'];
             
+            // Padding vertical generoso para separar visualmente las ramas paralelas
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 20.0), 
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
+                  // Flecha con condición de evolución (Nivel, Item, etc.)
                   _buildArrow(EvolutionHelper.formatEvoDetails(e['evolution_details'], targetEvoName, suffix)),
+                  // Llamada recursiva para construir la siguiente etapa de esta rama
                   _buildBranch(e, suffix, context),
                 ],
               ),
@@ -88,6 +97,8 @@ class EvolutionChainWidget extends StatelessWidget {
     ),
   );
 
+  /// Construye la tarjeta visual del Pokémon (Imagen + Nombre).
+  /// Carga los datos individualmente para obtener el sprite correcto.
   Widget _buildNode(String name, BuildContext context) {
     final api = ApiService();
     return FutureBuilder<Map<String, dynamic>>(
@@ -100,10 +111,12 @@ class EvolutionChainWidget extends StatelessWidget {
         }
         
         final data = snap.data!;
+        // Colorea el borde según el tipo principal del Pokémon
         final color = (data['types'] as List).first['type']['name'].toString().toTypeColor;
         final bool isCur = currentPokemonName == data['name'];
 
         return GestureDetector(
+          // Si tocamos un Pokémon de la cadena (que no sea el actual), navegamos a su pantalla.
           onTap: isCur ? null : () async {
             showDialog(
               context: context, 

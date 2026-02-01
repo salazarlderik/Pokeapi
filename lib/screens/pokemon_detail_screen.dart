@@ -9,6 +9,8 @@ import '../utils/pokemon_constants.dart';
 import '../utils/pokemon_extensions.dart';
 import '../widgets/evolution_chain_widget.dart';
 
+/// Pantalla de detalle: Muestra estadísticas, evoluciones, formas y debilidades.
+/// Es un StatefulWidget porque los datos cambian si el usuario selecciona una variante (Mega/Gmax).
 class PokemonDetailScreen extends StatefulWidget {
   final Map<String, dynamic> pokemon;
   final Map<String, dynamic> species;
@@ -22,6 +24,7 @@ class PokemonDetailScreen extends StatefulWidget {
 class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
   final ApiService _apiService = ApiService();
   
+  // Flags para manejar la carga independiente de cada sección
   bool _isLoadingAbilities = true;
   bool _isLoadingTypeDefenses = true;
   bool _isLoadingVarietyTypes = true;
@@ -30,10 +33,13 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
   final Map<String, String> _abilityDetails = {};
   Map<String, double> _typeEffectiveness = {};
   List<dynamic> _varieties = [];
+  
+  // Datos mutables: Se actualizan cuando el usuario cambia de forma (ej: Charizard -> Mega Charizard X)
   late Map<String, dynamic> _currentPokemonData;
   late String _currentVarietyName;
   late String _currentPokemonNameForEvo;
   late String _regionSuffixForEvo;
+  
   final Map<String, String> _varietyFirstTypes = {};
   Map<String, dynamic>? _evolutionChainData;
   Locale? _previousLocale;
@@ -41,14 +47,19 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
   @override
   void initState() {
     super.initState();
+    // Inicializamos con los datos pasados desde la lista
     _currentPokemonData = widget.pokemon;
     _varieties = widget.species['varieties'] ?? [];
     _currentVarietyName = _currentPokemonData['name'];
     _currentPokemonNameForEvo = widget.pokemon['name'];
     _regionSuffixForEvo = _getRegionSuffix();
+    
+    // Iniciamos la carga de la cadena evolutiva por separado
     _fetchEvolutionChain();
   }
 
+  /// Detecta cambios en dependencias heredadas (como el Idioma).
+  /// Si el usuario cambia de idioma, recargamos los textos (habilidades/descripciones).
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -58,23 +69,27 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
     }
   }
 
+  /// Analiza el nombre del Pokémon para determinar si pertenece a una región específica.
+  /// Vital para mostrar la evolución correcta (ej: Exeggcute -> Exeggutor Alola).
   String _getRegionSuffix() {
     final String name = _currentPokemonNameForEvo.toLowerCase();
     final String species = widget.species['name'].toLowerCase();
 
+    // Casos específicos por nombre de forma
     if (name.contains('white-striped')) return '-hisui';
-
     if (name.contains('-alola')) return '-alola';
     if (name.contains('-galar')) return '-galar';
     if (name.contains('-hisui')) return '-hisui';
     if (name.contains('-paldea') || name.startsWith('dudunsparce')) return '-paldea';
     
+    // Casos generales basados en listas de constantes
     if (PokeConstants.galarianEvolutions.contains(species)) return '-galar';
     if (PokeConstants.hisuianEvolutions.contains(species)) return '-hisui';
     if (PokeConstants.paldeanEvolutions.contains(species)) return '-paldea';
     return "";
   }
 
+  /// Orquestador: Carga en paralelo habilidades, efectividad de tipos y variantes.
   Future<void> _loadAllDataForCurrentForm() async {
     if (!mounted) return;
     setState(() { _isLoadingAbilities = true; _isLoadingTypeDefenses = true; _isLoadingVarietyTypes = true; });
@@ -85,14 +100,16 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
     ]);
   }
 
+  /// Carga la cadena evolutiva con lógica de seguridad para casos rotos en la API.
   Future<void> _fetchEvolutionChain() async {
     setState(() => _isLoadingEvolution = true);
     String speciesEvo = widget.species['name'];
     
-    // CAPA DE SEGURIDAD: Forzamos el origen de la cadena para Melmetal
+    // PARCHES MANUALES: La API tiene cadenas rotas para estos Pokémon específicos.
+    // Redirigimos a la especie base para obtener el árbol completo.
     if (speciesEvo == 'ursaluna') speciesEvo = 'teddiursa';
     if (speciesEvo.startsWith('dudunsparce')) speciesEvo = 'dunsparce';
-    if (speciesEvo == 'melmetal') speciesEvo = 'meltan'; // Melmetal busca a Meltan para ver la cadena completa
+    if (speciesEvo == 'melmetal') speciesEvo = 'meltan'; 
 
     try {
       final speciesData = await _apiService.fetchPokemonSpecies(speciesEvo);
@@ -103,6 +120,7 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
     }
   }
 
+  /// Obtiene el tipo principal de cada variedad para colorear los chips selectores (ej: Chip rojo para Gmax).
   Future<void> _fetchVarietyTypes() async {
     for (var v in _varieties) {
       final String fName = v['pokemon']['name'];
@@ -117,6 +135,7 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
     if (mounted) setState(() => _isLoadingVarietyTypes = false);
   }
 
+  /// Carga y traduce las descripciones de las habilidades.
   Future<void> _fetchAbilityDetails(Map<String, dynamic> data, String lang) async {
     final abilities = data['abilities'] as List;
     for (var a in abilities) {
@@ -126,6 +145,7 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
     if (mounted) setState(() { _isLoadingAbilities = false; });
   }
 
+  // Helper para obtener texto de habilidad con fallback a inglés si no hay traducción.
   Future<Map<String, String?>> _fetchSingleAbility(String url, String name, String lang) async {
     try {
       final uri = Uri.parse(url).replace(queryParameters: {'cb': DateTime.now().millisecondsSinceEpoch.toString()});
@@ -139,6 +159,7 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
     return {'name': name, 'effect': 'abilities_fallback.error'.tr()};
   }
 
+  /// Calcula la tabla de tipos (x2, x4, x0.5, etc.) iterando sobre los tipos del Pokémon actual.
   Future<void> _fetchTypeEffectiveness(Map<String, dynamic> data) async {
     Map<String, double> map = { for (var t in PokeConstants.allTypes) t: 1.0 };
     final types = (data['types'] as List).map((t) => t['type']['name'] as String).toList();
@@ -147,6 +168,7 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
       for (var r in resps) {
         if (r.statusCode == 200) {
           final dr = jsonDecode(r.body)['damage_relations'];
+          // Multiplicamos acumulativamente para manejar tipos dobles (ej: Agua/Volador vs Eléctrico = x4)
           for (var t in dr['double_damage_from']) { map[t['name']] = (map[t['name']] ?? 1.0) * 2.0; }
           for (var t in dr['half_damage_from']) { map[t['name']] = (map[t['name']] ?? 1.0) * 0.5; }
           for (var t in dr['no_damage_from']) { map[t['name']] = 0.0; }
@@ -158,6 +180,7 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Extracción de datos básicos para la UI principal
     final types = (_currentPokemonData['types'] as List).map((t) => t['type']['name'] as String).toList();
     final mainColor = types.first.toTypeColor;
     final name = _currentPokemonData['name'];
@@ -190,6 +213,7 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
         ],
       ),
       body: Container(
+        // Fondo con gradiente suave basado en el tipo principal
         decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [mainColor.withValues(alpha: 0.3), Theme.of(context).scaffoldBackgroundColor])),
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -231,6 +255,7 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
     avatar: SvgPicture.network('https://raw.githubusercontent.com/duiker101/pokemon-type-svg-icons/master/icons/$type.svg', width: 18, colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn)),
   );
 
+  /// Selector de formas (Variedades). Solo se muestra si hay más de 1 forma.
   Widget _buildFormSelector(Color mainColor) {
     if (_varieties.length <= 1) return const SizedBox.shrink();
     return Container(
@@ -241,7 +266,10 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
               final isSel = fName == _currentVarietyName;
               final display = fName.replaceFirst(widget.species['name'], '').cleanName;
               final label = display.isEmpty ? 'forms.base'.tr() : display;
+              
+              // Renderizado especial para Mega Evoluciones (botón estilo "Piedra Activadora")
               if (label.contains('Mega')) return _buildMegaChip(label, fName, isSel);
+              
               final typeColor = _varietyFirstTypes[fName]?.toTypeColor ?? mainColor;
               return Padding(padding: const EdgeInsets.symmetric(horizontal: 4), child: ChoiceChip(showCheckmark: false, avatar: label.contains('Gmax') ? Image.asset('assets/images/gmax_logo.png', width: 20, color: isSel ? Colors.white : null) : null, label: Text(label, style: TextStyle(color: isSel ? Colors.white : Colors.black, fontWeight: FontWeight.bold)), selected: isSel, onSelected: (_) => _onFormChanged(fName), selectedColor: label.contains('Gmax') ? Colors.red[700] : typeColor));
             }).toList())),
@@ -271,6 +299,7 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
 
   Widget _buildStatBar(dynamic stat) {
     final int val = stat['base_stat'];
+    // Lógica de colores para las barras de estadísticas (Rojo = bajo, Azul = alto)
     final color = val <= 59 ? Colors.red : val <= 99 ? Colors.yellow.shade700 : val <= 159 ? Colors.green : Colors.blue;
     return Column(children: [Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text(_translateStat(stat['stat']['name']).tr(), style: const TextStyle(fontWeight: FontWeight.bold)), Text(val.toString(), style: const TextStyle(fontWeight: FontWeight.bold))]), ClipRRect(borderRadius: BorderRadius.circular(8), child: LinearProgressIndicator(value: val / 200, backgroundColor: color.withValues(alpha: 0.2), valueColor: AlwaysStoppedAnimation(color), minHeight: 12)), const SizedBox(height: 8)]);
   }
@@ -292,15 +321,18 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
 
   Widget _buildAbilitiesList(List abs) => Column(children: abs.map((a) => Card(child: ListTile(title: Text(a['ability']['name'].toString().cleanName, style: const TextStyle(fontWeight: FontWeight.bold)), subtitle: Text(_abilityDetails[a['ability']['name']] ?? '')))).toList());
 
+  /// Manejador de cambio de forma (Mega, Gmax, Regional).
+  /// Reemplaza todos los datos del Pokémon actual y fuerza un repintado de la UI.
   void _onFormChanged(String name) async {
     final data = await _apiService.fetchPokemonDetails(name);
     setState(() { 
       _currentPokemonData = data; 
       _currentVarietyName = name; 
-      _currentPokemonNameForEvo = name; // Vital para filtros reactivos
+      _currentPokemonNameForEvo = name; // Actualiza el nombre base para recalcular filtros regionales
       _regionSuffixForEvo = _getRegionSuffix(); 
     });
+    // Recarga los datos auxiliares (stats, habilidades) para la nueva forma
     _loadAllDataForCurrentForm(); 
-    _fetchEvolutionChain(); // Esto fuerza a que la tabla se redibuje con el filtro nuevo
+    _fetchEvolutionChain(); // Reconstruye la tabla evolutiva por si la forma cambia la cadena
   }
 }

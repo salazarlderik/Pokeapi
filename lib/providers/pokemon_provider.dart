@@ -8,9 +8,11 @@ class PokemonProvider extends ChangeNotifier {
   List<dynamic> _allPokemon = []; 
   String _searchQuery = "";
   String? _selectedType;
+  
+  // Cache para guardar los tipos y poder filtrar localmente sin llamar a la API cada vez
   final Map<String, List<String>> _pokemonTypesMap = {};
   
-  // NUEVO: Guardamos el sufijo de la región actual
+  // Sufijo regional (ej: '-alola') vital para pedir la variante correcta a la API
   String _currentRegionSuffix = "";
   String get currentRegionSuffix => _currentRegionSuffix;
 
@@ -21,13 +23,16 @@ class PokemonProvider extends ChangeNotifier {
   String get searchQuery => _searchQuery;
   String? get selectedType => _selectedType;
 
+  // Lógica principal de filtrado para la UI
   List<dynamic> get filteredPokemon {
+    // 1. Si hay tipo seleccionado, filtramos usando el mapa de tipos en memoria
     if (_selectedType != null) {
       return _allPokemon.where((p) {
         final types = _pokemonTypesMap[p['name']];
         return types?.contains(_selectedType) ?? false;
       }).toList();
     }
+    // 2. Si hay búsqueda, filtramos por nombre o ID
     if (_searchQuery.trim().isNotEmpty) {
       final q = _searchQuery.trim().toLowerCase();
       return _allPokemon.where((p) {
@@ -40,7 +45,7 @@ class PokemonProvider extends ChangeNotifier {
   }
 
   PokemonProvider({required int generationId, String? regionFilter}) {
-    // Definimos el sufijo según la entrada
+    // Determinamos el sufijo para manejar formas regionales (Alola, Galar, Hisui, Paldea)
     if (regionFilter == 'galar') _currentRegionSuffix = '-galar';
     else if (regionFilter == 'hisui') _currentRegionSuffix = '-hisui';
     else if (generationId == 7) _currentRegionSuffix = '-alola';
@@ -73,12 +78,15 @@ class PokemonProvider extends ChangeNotifier {
     notifyListeners();
     try {
       List<dynamic> entries = await _apiService.fetchGenerationEntries(generationId);
+      
+      // Ordenamos numéricamente por ID (la API a veces los devuelve desordenados)
       entries.sort((a, b) {
         final idA = int.parse(a['url'].split('/').reversed.elementAt(1));
         final idB = int.parse(b['url'].split('/').reversed.elementAt(1));
         return idA.compareTo(idB);
       });
 
+      // Filtro especial Gen 8: Separamos Galar y Hisui basándonos en rangos de ID
       _allPokemon = (generationId == 8 && regionFilter != null)
           ? entries.where((e) {
               final id = int.parse(e['url'].split('/').reversed.elementAt(1));
@@ -96,14 +104,14 @@ class PokemonProvider extends ChangeNotifier {
     }
   }
 
+  // Carga los tipos en segundo plano usando el sufijo para obtener la variante correcta
   Future<void> _loadTypesInBackground() async {
     for (var p in _allPokemon) {
       if (_isDisposed) return;
       try {
-        // ACTUALIZADO: Usamos el sufijo para cargar los tipos regionales
         final d = await _apiService.fetchDefaultPokemonDetailsFromSpecies(
           p['name'], 
-          suffix: _currentRegionSuffix
+          suffix: _currentRegionSuffix // Clave para obtener tipos regionales (ej: Vulpix Alola)
         );
         if (_isDisposed) return;
         _pokemonTypesMap[p['name']] = (d['types'] as List).map((t) => t['type']['name'] as String).toList();
