@@ -5,31 +5,30 @@ plugins {
 }
 
 android {
-    // Definimos el namespace para tu app principal
     namespace = "com.example.pokeapi_app"
     
-    // CAMBIO 1: Forzamos la versión de compilación a 34
-    compileSdk = 34 
+    // OBLIGATORIO: 35
+    compileSdk = 35 
     
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        // OBLIGATORIO: Java 17 para Gradle 8+
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = "1.8"
+        // OBLIGATORIO: Java 17
+        jvmTarget = "17"
     }
 
     defaultConfig {
         applicationId = "com.example.pokeapi_app"
-        
-        // Isar requiere como mínimo la versión 21 (puedes dejarlo en 21 o subirlo a 23 si da guerra)
         minSdk = 21 
         
-        // CAMBIO 2: Forzamos el target a 34
-        targetSdk = 34
+        // OBLIGATORIO: 35
+        targetSdk = 35
         
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -37,7 +36,6 @@ android {
 
     buildTypes {
         release {
-            // Configuración básica para pruebas
             signingConfig = signingConfigs.debug
         }
     }
